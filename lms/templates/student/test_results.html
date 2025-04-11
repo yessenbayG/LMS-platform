@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Test Results - {{ test.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Test Results: {{ test.title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_course', course_id=course.id) }}">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_module', module_id=module.id) }}">{{ module.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_test', test_id=test.id) }}">Test</a></li>
+                    <li class="breadcrumb-item active">Results</li>
+                </ol>
+            </nav>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Your Results</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Score:</strong> {{ attempt.score|round(1) }}%</p>
+                            <p><strong>Status:</strong> 
+                                {% if attempt.passed %}
+                                    <span class="badge badge-success">Passed</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Failed</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Completed:</strong> {{ attempt.completed_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Required to Pass:</strong> {{ test.passing_score }}%</p>
+                            {% if not attempt.passed %}
+                                <div class="alert alert-warning">
+                                    <p>You did not meet the passing score for this test. You can try again!</p>
+                                    <a href="{{ url_for('student.view_test', test_id=test.id) }}" class="btn btn-primary">Return to Test</a>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-success">
+                                    <p>Congratulations! You've passed this test.</p>
+                                    <a href="{{ url_for('student.view_module', module_id=module.id) }}" class="btn btn-primary">Back to Module</a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Question Results</h3>
+                </div>
+                <div class="card-body">
+                    {% for data in result_data %}
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4>Question {{ loop.index }}</h4>
+                            </div>
+                            <div class="card-body">
+                                <p class="lead">{{ data.question.question_text }}</p>
+                                <p><strong>Points:</strong> {{ data.question.points }}</p>
+                                <p><strong>Your Score:</strong> {{ data.answer.points_earned|default(0) }} / {{ data.question.points }}</p>
+                                
+                                {% if data.question.question_type == 'multiple_choice' %}
+                                    <h5>Options:</h5>
+                                    <ul class="list-group">
+                                        {% for option in data.options %}
+                                            <li class="list-group-item 
+                                                {% if option.is_correct and option.id in data.selected_options %}
+                                                    list-group-item-success
+                                                {% elif option.is_correct and option.id not in data.selected_options %}
+                                                    list-group-item-danger
+                                                {% elif not option.is_correct and option.id in data.selected_options %}
+                                                    list-group-item-warning
+                                                {% endif %}
+                                            ">
+                                                {{ option.option_text }}
+                                                {% if option.is_correct %}
+                                                    <span class="badge badge-success">Correct</span>
+                                                {% endif %}
+                                                {% if option.id in data.selected_options %}
+                                                    <span class="badge badge-primary">Selected</span>
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% elif data.question.question_type == 'true_false' %}
+                                    <h5>Options:</h5>
+                                    <ul class="list-group">
+                                        {% for option in data.options %}
+                                            <li class="list-group-item 
+                                                {% if option.is_correct and option.id in data.selected_options %}
+                                                    list-group-item-success
+                                                {% elif option.is_correct and option.id not in data.selected_options %}
+                                                    list-group-item-danger
+                                                {% elif not option.is_correct and option.id in data.selected_options %}
+                                                    list-group-item-warning
+                                                {% endif %}
+                                            ">
+                                                {{ option.option_text }}
+                                                {% if option.is_correct %}
+                                                    <span class="badge badge-success">Correct</span>
+                                                {% endif %}
+                                                {% if option.id in data.selected_options %}
+                                                    <span class="badge badge-primary">Selected</span>
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% elif data.question.question_type == 'essay' %}
+                                    <h5>Your Answer:</h5>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            {% if data.answer and data.answer.answer_text %}
+                                                {{ data.answer.answer_text|nl2br }}
+                                            {% else %}
+                                                <em>No answer provided</em>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <p class="mt-2"><small>Note: Essay questions are graded manually by your instructor.</small></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

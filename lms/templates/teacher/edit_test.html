@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Test - {{ test.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>{{ test.title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.manage_modules', course_id=course.id) }}">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.view_module', module_id=module.id) }}">{{ module.title }}</a></li>
+                    <li class="breadcrumb-item active">Edit Test</li>
+                </ol>
+            </nav>
+            <p class="lead">{{ test.description }}</p>
+            <p><strong>Passing Score:</strong> {{ test.passing_score }}%</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Add Question</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('teacher.add_question', test_id=test.id) }}">
+                        {{ question_form.csrf_token }}
+                        <div class="form-group">
+                            {{ question_form.question_text.label }}
+                            {{ question_form.question_text(class="form-control", rows=3) }}
+                            {% if question_form.question_text.errors %}
+                                {% for error in question_form.question_text.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            {{ question_form.question_type.label }}
+                            {{ question_form.question_type(class="form-control") }}
+                            {% if question_form.question_type.errors %}
+                                {% for error in question_form.question_type.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                <strong>Multiple Choice:</strong> Students select one or more options<br>
+                                <strong>True/False:</strong> Students select True or False<br>
+                                <strong>Essay:</strong> Students provide a written response
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            {{ question_form.points.label }}
+                            {{ question_form.points(class="form-control") }}
+                            <small class="form-text text-muted">Point value for this question</small>
+                            {% if question_form.points.errors %}
+                                {% for error in question_form.points.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            {{ question_form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Test Questions</h3>
+                </div>
+                <div class="card-body">
+                    {% if questions %}
+                        <div class="list-group">
+                            {% for question in questions %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ question.question_text }}</h5>
+                                        <span class="badge badge-primary">{{ question.question_type }}</span>
+                                    </div>
+                                    <p class="mb-1"><strong>Points:</strong> {{ question.points }}</p>
+                                    
+                                    {% if question.question_type in ['multiple_choice', 'true_false'] %}
+                                        <div class="mt-2">
+                                            <a href="{{ url_for('teacher.edit_question', question_id=question.id) }}" class="btn btn-sm btn-primary">Manage Options</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">No questions have been added to this test yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

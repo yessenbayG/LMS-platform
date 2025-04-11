@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Grade Submission - {{ assignment.title }} - LMS{% endblock %}
+
+{% block content %}
+<h1>Grade Submission</h1>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Submission Details</h3>
+    </div>
+    <div class="card-body">
+        <p><strong>Assignment:</strong> {{ assignment.title }}</p>
+        <p><strong>Student:</strong> {{ student.get_full_name() }}</p>
+        <p><strong>Submitted:</strong> {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        
+        {% if submission.content %}
+            <div class="mt-4">
+                <h4>Student's Answer</h4>
+                <div style="background-color: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
+                    {{ submission.content }}
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if submission.file_path %}
+            <div class="mt-4">
+                <h4>Submitted File</h4>
+                <a href="{{ url_for('course.download_file', filename=submission.file_path) }}" class="btn btn-primary" target="_blank">Download Submission</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>{% if submission.grade is not none %}Update Grade{% else %}Grade Submission{% endif %}</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('teacher.grade_submission', submission_id=submission.id) }}">
+            {{ form.csrf_token }}
+            
+            <div class="form-group">
+                {{ form.grade.label }}
+                {{ form.grade(class="form-control") }}
+                {% if form.grade.errors %}
+                    {% for error in form.grade.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.feedback.label }}
+                {{ form.feedback(class="form-control", rows=5) }}
+                {% if form.feedback.errors %}
+                    {% for error in form.feedback.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <a href="{{ url_for('teacher.assignment_submissions', assignment_id=assignment.id) }}" class="btn btn-secondary">Back to Submissions</a>
+    </div>
+</div>
+{% endblock %}

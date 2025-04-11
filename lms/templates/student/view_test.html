@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Test: {{ test.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>{{ test.title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_course', course_id=course.id) }}">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_module', module_id=module.id) }}">{{ module.title }}</a></li>
+                    <li class="breadcrumb-item active">Test</li>
+                </ol>
+            </nav>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Test Information</h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead">{{ test.description }}</p>
+                    <p><strong>Passing Score:</strong> {{ test.passing_score }}%</p>
+                    
+                    {% if ongoing_attempt %}
+                        <div class="alert alert-warning">
+                            You have an incomplete test attempt. <a href="{{ url_for('student.take_test', attempt_id=ongoing_attempt.id) }}" class="btn btn-warning">Continue Test</a>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('student.start_test', test_id=test.id) }}" class="btn btn-primary">Start Test</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if attempts %}
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Your Previous Attempts</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Date</th>
+                                        <th>Score</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for attempt in attempts %}
+                                        {% if attempt.completed_at %}
+                                            <tr>
+                                                <td>{{ loop.index }}</td>
+                                                <td>{{ attempt.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                                <td>{{ attempt.score|round(1) }}%</td>
+                                                <td>
+                                                    {% if attempt.passed %}
+                                                        <span class="badge badge-success">Passed</span>
+                                                    {% else %}
+                                                        <span class="badge badge-danger">Failed</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <a href="{{ url_for('student.view_test_results', attempt_id=attempt.id) }}" class="btn btn-sm btn-info">View Results</a>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

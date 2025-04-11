@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Course Students - {{ course.title }} - LMS{% endblock %}
+
+{% block content %}
+<h1>{{ course.title }} - Enrolled Students</h1>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Students Enrolled</h3>
+    </div>
+    <div class="card-body">
+        {% if students %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Enrolled Since</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.id }}</td>
+                        <td>{{ student.get_full_name() }}</td>
+                        <td>{{ student.email }}</td>
+                        <td>
+                            {% for enrollment in student.enrollments %}
+                                {% if enrollment.course_id == course.id %}
+                                    {{ enrollment.enrolled_at.strftime('%Y-%m-%d') }}
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No students enrolled in this course yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Course Actions</h3>
+    </div>
+    <div class="card-body">
+        <a href="{{ url_for('teacher.add_course_content', course_id=course.id) }}" class="btn btn-primary">Manage Course Content</a>
+        <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

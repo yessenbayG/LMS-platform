@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ module.title }} - Module Content{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>{{ module.title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.manage_modules', course_id=course.id) }}">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item active">{{ module.title }}</li>
+                </ol>
+            </nav>
+            <p class="lead">{{ module.description }}</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Materials Section -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3>Module Materials</h3>
+                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addMaterialModal">
+                        Add Material
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if materials %}
+                        <div class="list-group">
+                            {% for material in materials %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ material.title }}</h5>
+                                        <small>{{ material.content_type }}</small>
+                                    </div>
+                                    {% if material.content_type == 'text' %}
+                                        <p class="mb-1">{{ material.content|truncate(100) }}</p>
+                                    {% elif material.content_type == 'file' %}
+                                        <p class="mb-1">File: <a href="{{ url_for('static', filename=material.file_path) }}" target="_blank">{{ material.file_path.split('/')[-1] }}</a></p>
+                                    {% elif material.content_type == 'link' %}
+                                        <p class="mb-1">Link: <a href="{{ material.content }}" target="_blank">{{ material.content }}</a></p>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">No materials have been added to this module yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tests Section -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3>Module Tests</h3>
+                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addTestModal">
+                        Add Test
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if tests %}
+                        <div class="list-group">
+                            {% for test in tests %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ test.title }}</h5>
+                                        <small>Passing Score: {{ test.passing_score }}%</small>
+                                    </div>
+                                    <p class="mb-1">{{ test.description|truncate(100) }}</p>
+                                    <div class="mt-2">
+                                        <a href="{{ url_for('teacher.edit_test', test_id=test.id) }}" class="btn btn-sm btn-primary">Edit Test</a>
+                                        <a href="{{ url_for('teacher.test_results', test_id=test.id) }}" class="btn btn-sm btn-info">View Results</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">No tests have been added to this module yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Material Modal -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1" role="dialog" aria-labelledby="addMaterialModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMaterialModalLabel">Add New Material</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('teacher.add_module_material', module_id=module.id) }}" enctype="multipart/form-data">
+                    {{ material_form.csrf_token }}
+                    <div class="form-group">
+                        {{ material_form.title.label }}
+                        {{ material_form.title(class="form-control") }}
+                    </div>
+                    <div class="form-group">
+                        {{ material_form.content_type.label }}
+                        {{ material_form.content_type(class="form-control") }}
+                    </div>
+                    <div class="form-group content-field">
+                        {{ material_form.content.label }}
+                        {{ material_form.content(class="form-control", rows=5) }}
+                        <small class="form-text text-muted content-text">Enter text content for this material.</small>
+                        <small class="form-text text-muted content-link" style="display: none;">Enter the URL for this material.</small>
+                    </div>
+                    <div class="form-group file-field" style="display: none;">
+                        {{ material_form.file.label }}
+                        {{ material_form.file(class="form-control-file") }}
+                    </div>
+                    <div class="form-group">
+                        {{ material_form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Test Modal -->
+<div class="modal fade" id="addTestModal" tabindex="-1" role="dialog" aria-labelledby="addTestModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTestModalLabel">Add New Test</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('teacher.add_test', module_id=module.id) }}">
+                    {{ test_form.csrf_token }}
+                    <div class="form-group">
+                        {{ test_form.title.label }}
+                        {{ test_form.title(class="form-control") }}
+                    </div>
+                    <div class="form-group">
+                        {{ test_form.description.label }}
+                        {{ test_form.description(class="form-control", rows=3) }}
+                    </div>
+                    <div class="form-group">
+                        {{ test_form.passing_score.label }}
+                        {{ test_form.passing_score(class="form-control") }}
+                        <small class="form-text text-muted">Enter a number between 0 and 100.</small>
+                    </div>
+                    <div class="form-group">
+                        {{ test_form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const contentTypeSelect = document.querySelector('select[name="content_type"]');
+        const contentField = document.querySelector('.content-field');
+        const contentTextHelp = document.querySelector('.content-text');
+        const contentLinkHelp = document.querySelector('.content-link');
+        const fileField = document.querySelector('.file-field');
+        
+        function updateFields() {
+            const contentType = contentTypeSelect.value;
+            
+            // Show/hide appropriate fields based on content type
+            if (contentType === 'text') {
+                contentField.style.display = 'block';
+                contentTextHelp.style.display = 'block';
+                contentLinkHelp.style.display = 'none';
+                fileField.style.display = 'none';
+            } else if (contentType === 'link') {
+                contentField.style.display = 'block';
+                contentTextHelp.style.display = 'none';
+                contentLinkHelp.style.display = 'block';
+                fileField.style.display = 'none';
+            } else if (contentType === 'file') {
+                contentField.style.display = 'none';
+                fileField.style.display = 'block';
+            }
+        }
+        
+        // Set initial state
+        updateFields();
+        
+        // Update when content type changes
+        contentTypeSelect.addEventListener('change', updateFields);
+    });
+</script>
+{% endblock %}
+{% endblock %}

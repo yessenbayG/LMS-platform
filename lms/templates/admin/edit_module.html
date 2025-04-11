@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Module - {{ module.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Edit Module</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.manage_courses') }}">Courses</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.edit_course', course_id=course.id) }}">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.manage_course_modules', course_id=course.id) }}">Modules</a></li>
+                    <li class="breadcrumb-item active">Edit {{ module.title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Edit Module Details</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.edit_module', module_id=module.id) }}">
+                        {{ form.csrf_token }}
+                        
+                        <div class="form-group">
+                            {{ form.title.label }}
+                            {{ form.title(class="form-control") }}
+                            {% if form.title.errors %}
+                                {% for error in form.title.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.description.label }}
+                            {{ form.description(class="form-control", rows=5) }}
+                            {% if form.description.errors %}
+                                {% for error in form.description.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.order.label }}
+                            {{ form.order(class="form-control") }}
+                            <small class="text-muted">Modules are displayed in ascending order.</small>
+                            {% if form.order.errors %}
+                                {% for error in form.order.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.submit(class="btn btn-primary", value="Update Module") }}
+                            <a href="{{ url_for('admin.manage_course_modules', course_id=course.id) }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

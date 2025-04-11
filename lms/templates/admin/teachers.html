@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Teachers - LMS{% endblock %}
+
+{% block content %}
+<h1>Manage Teachers</h1>
+
+<div class="mb-3">
+    <a href="{{ url_for('admin.create_teacher') }}" class="btn btn-primary">Create New Teacher Account</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for teacher in teachers %}
+                <tr>
+                    <td>{{ teacher.id }}</td>
+                    <td>{{ teacher.first_name }} {{ teacher.last_name }}</td>
+                    <td>{{ teacher.email }}</td>
+                    <td>{{ 'Active' if teacher.is_active else 'Inactive' }}</td>
+                    <td>{{ teacher.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        {% if teacher.is_active %}
+                            <a href="{{ url_for('admin.toggle_user_status', user_id=teacher.id) }}" class="btn btn-sm btn-warning">Deactivate</a>
+                        {% else %}
+                            <a href="{{ url_for('admin.toggle_user_status', user_id=teacher.id) }}" class="btn btn-sm btn-success">Activate</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Modules - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Course Modules: {{ course.title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_course', course_id=course.id) }}">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item active">Modules</li>
+                </ol>
+            </nav>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Course Progress</h3>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3">
+                        {% set total_modules = module_data|length %}
+                        {% set completed_modules = module_data|selectattr('completed')|list|length %}
+                        {% set progress = (completed_modules / total_modules * 100) if total_modules > 0 else 0 %}
+                        
+                        <div class="progress-bar" role="progressbar" style="width: {{ progress }}%" 
+                             aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ completed_modules }}/{{ total_modules }} Modules Complete
+                        </div>
+                    </div>
+                    
+                    {% if enrollment.overall_grade is not none %}
+                        <p class="mt-3">
+                            <strong>Current Grade:</strong> 
+                            {{ enrollment.overall_grade|round(1) }}%
+                            {% if enrollment.overall_grade >= 70 %}
+                                <span class="badge badge-success">Passing</span>
+                            {% else %}
+                                <span class="badge badge-danger">Failing</span>
+                            {% endif %}
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Module List</h3>
+                </div>
+                <div class="card-body">
+                    {% if module_data %}
+                        <div class="list-group">
+                            {% for data in module_data %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ data.module.title }}</h5>
+                                        {% if data.completed %}
+                                            <span class="badge badge-success">Completed</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">In Progress</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="mb-1">{{ data.module.description|truncate(200) }}</p>
+                                    
+                                    <div class="progress mt-2 mb-2" style="height: 5px;">
+                                        <div class="progress-bar bg-info" role="progressbar" 
+                                             style="width: {{ data.test_completion }}%" 
+                                             aria-valuenow="{{ data.test_completion }}" 
+                                             aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <small>
+                                        Test Progress: {{ data.passed_tests }}/{{ data.test_count }} tests passed
+                                    </small>
+                                    
+                                    <div class="mt-2">
+                                        <a href="{{ url_for('student.view_module', module_id=data.module.id) }}" class="btn btn-sm btn-primary">View Module</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">This course doesn't have any modules yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

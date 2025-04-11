@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Course - LMS{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Create New Course</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('teacher.create_course') }}" enctype="multipart/form-data">
+            {{ form.csrf_token }}
+            
+            <div class="form-group">
+                {{ form.title.label }}
+                {{ form.title(class="form-control") }}
+                {% if form.title.errors %}
+                    {% for error in form.title.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.category.label }}
+                {{ form.category(class="form-control") }}
+                {% if form.category.errors %}
+                    {% for error in form.category.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.description.label }}
+                {{ form.description(class="form-control", rows=5) }}
+                {% if form.description.errors %}
+                    {% for error in form.description.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.course_image.label }}
+                {{ form.course_image(class="form-control-file") }}
+                {% if form.course_image.errors %}
+                    {% for error in form.course_image.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+                <small class="text-muted">Upload an image for your course (optional). Recommended size: 1200x600px.</small>
+            </div>
+            
+            <div class="alert alert-info">
+                <strong>Note:</strong> After creating your course, you'll be able to add modules, materials, and tests.
+            </div>
+            
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

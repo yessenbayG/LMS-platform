@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Module: {{ module.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>{{ module.title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_course', course_id=course.id) }}">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_course_modules', course_id=course.id) }}">Modules</a></li>
+                    <li class="breadcrumb-item active">{{ module.title }}</li>
+                </ol>
+            </nav>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Module Information</h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead">{{ module.description }}</p>
+                    
+                    <div class="progress mb-3">
+                        {% set test_count = test_data|length %}
+                        {% set passed_tests = test_data|selectattr('passed')|list|length %}
+                        {% set test_progress = (passed_tests / test_count * 100) if test_count > 0 else 100 %}
+                        
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ test_progress }}%" 
+                             aria-valuenow="{{ test_progress }}" aria-valuemin="0" aria-valuemax="100">
+                            {% if test_count > 0 %}
+                                {{ passed_tests }}/{{ test_count }} Tests Passed
+                            {% else %}
+                                No Tests Required
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {% if progress.completed %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i> You have completed this module on {{ progress.completed_at.strftime('%Y-%m-%d') }}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Work through the materials and pass all tests to complete this module.
+                            </div>
+                            
+                            {% if test_count == 0 or test_progress == 100 %}
+                                <a href="{{ url_for('student.complete_module', module_id=module.id) }}" class="btn btn-success">
+                                    Mark Module as Complete
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Materials Section -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Module Materials</h3>
+                </div>
+                <div class="card-body">
+                    {% if materials %}
+                        <div class="list-group">
+                            {% for material in materials %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ material.title }}</h5>
+                                        <small>{{ material.content_type }}</small>
+                                    </div>
+                                    {% if material.content_type == 'text' %}
+                                        <p class="mb-1">{{ material.content }}</p>
+                                    {% elif material.content_type == 'file' %}
+                                        <p class="mb-1">File: <a href="{{ url_for('static', filename=material.file_path) }}" target="_blank">Download</a></p>
+                                    {% elif material.content_type == 'link' %}
+                                        <p class="mb-1">Link: <a href="{{ material.content }}" target="_blank">{{ material.content }}</a></p>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">No materials have been added to this module yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tests Section -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Module Tests</h3>
+                </div>
+                <div class="card-body">
+                    {% if test_data %}
+                        <div class="list-group">
+                            {% for data in test_data %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ data.test.title }}</h5>
+                                        <small>Passing Score: {{ data.test.passing_score }}%</small>
+                                    </div>
+                                    <p class="mb-1">{{ data.test.description|truncate(100) }}</p>
+                                    
+                                    {% if data.attempt %}
+                                        <div class="d-flex justify-content-between align-items-center mt-2">
+                                            <div>
+                                                <strong>Your Score:</strong> {{ data.attempt.score|round(1) }}%
+                                                {% if data.passed %}
+                                                    <span class="badge badge-success">Passed</span>
+                                                {% else %}
+                                                    <span class="badge badge-danger">Failed</span>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <a href="{{ url_for('student.view_test_results', attempt_id=data.attempt.id) }}" class="btn btn-sm btn-info">View Results</a>
+                                                <a href="{{ url_for('student.view_test', test_id=data.test.id) }}" class="btn btn-sm btn-primary">Take Test Again</a>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="mt-2">
+                                            <a href="{{ url_for('student.view_test', test_id=data.test.id) }}" class="btn btn-sm btn-primary">Take Test</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">No tests have been added to this module yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

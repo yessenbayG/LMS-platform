@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Users - LMS{% endblock %}
+
+{% block content %}
+<h1>Manage Users</h1>
+
+<div class="mb-3">
+    <a href="{{ url_for('admin.manage_users', role='all') }}" class="btn {% if current_filter == 'all' %}btn-primary{% else %}btn-secondary{% endif %}">All Users</a>
+    <a href="{{ url_for('admin.manage_users', role='admin') }}" class="btn {% if current_filter == 'admin' %}btn-primary{% else %}btn-secondary{% endif %}">Admins</a>
+    <a href="{{ url_for('admin.manage_users', role='teacher') }}" class="btn {% if current_filter == 'teacher' %}btn-primary{% else %}btn-secondary{% endif %}">Teachers</a>
+    <a href="{{ url_for('admin.manage_users', role='student') }}" class="btn {% if current_filter == 'student' %}btn-primary{% else %}btn-secondary{% endif %}">Students</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role.name }}</td>
+                    <td>{{ 'Active' if user.is_active else 'Inactive' }}</td>
+                    <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        {% if user.id != current_user.id %}
+                            {% if user.is_active %}
+                                <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" class="btn btn-sm btn-warning">Deactivate</a>
+                            {% else %}
+                                <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" class="btn btn-sm btn-success">Activate</a>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

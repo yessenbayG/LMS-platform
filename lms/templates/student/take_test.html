@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Taking Test: {{ test.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>{{ test.title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_course', course_id=course.id) }}">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_module', module_id=module.id) }}">{{ module.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.view_test', test_id=test.id) }}">Test</a></li>
+                    <li class="breadcrumb-item active">Taking Test</li>
+                </ol>
+            </nav>
+            
+            <div class="alert alert-info">
+                <p><strong>Important:</strong> Complete all questions and click Submit at the bottom when you're finished.</p>
+                <p>Passing score: {{ test.passing_score }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Test Questions</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('student.take_test', attempt_id=attempt.id) }}">
+                        {{ form.csrf_token }}
+                        
+                        {% for data in question_data %}
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h4>Question {{ loop.index }}</h4>
+                                </div>
+                                <div class="card-body">
+                                    <p class="lead">{{ data.question.question_text }}</p>
+                                    <p><small>Points: {{ data.question.points }}</small></p>
+                                    
+                                    {% if data.question.question_type == 'multiple_choice' %}
+                                        <div class="form-group">
+                                            <label><strong>Select all correct answers:</strong></label>
+                                            {% for option in data.options %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="question_{{ data.question.id }}" value="{{ option.id }}" id="option_{{ option.id }}">
+                                                    <label class="form-check-label" for="option_{{ option.id }}">
+                                                        {{ option.option_text }}
+                                                    </label>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% elif data.question.question_type == 'true_false' %}
+                                        <div class="form-group">
+                                            <label><strong>Select one:</strong></label>
+                                            {% for option in data.options %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="question_{{ data.question.id }}" value="{{ option.id }}" id="option_{{ option.id }}">
+                                                    <label class="form-check-label" for="option_{{ option.id }}">
+                                                        {{ option.option_text }}
+                                                    </label>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% elif data.question.question_type == 'essay' %}
+                                        <div class="form-group">
+                                            <label><strong>Your Answer:</strong></label>
+                                            <textarea class="form-control" name="question_{{ data.question.id }}_essay" rows="5"></textarea>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                        <div class="form-group text-center">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

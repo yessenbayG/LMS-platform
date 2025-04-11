@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard - LMS{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <div class="breadcrumb-item active"><i class="fas fa-tachometer-alt mr-1"></i> Dashboard</div>
+</div>
+
+<h1 class="mb-4">Student Dashboard</h1>
+
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <i class="fas fa-book-open mb-2" style="font-size: 2rem; color: var(--primary);"></i>
+        <div class="stat-label">Enrolled Courses</div>
+        <div class="stat-value">{{ total_courses }}</div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3><i class="fas fa-bolt mr-2"></i>Quick Actions</h3>
+    </div>
+    <div class="card-body">
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('student.browse_courses') }}" class="btn btn-primary mb-2 mr-2">
+                <i class="fas fa-search mr-1"></i> Browse Courses
+            </a>
+            <a href="{{ url_for('student.my_assignments') }}" class="btn btn-secondary mb-2 mr-2">
+                <i class="fas fa-tasks mr-1"></i> View Assignments
+            </a>
+            <a href="{{ url_for('student.view_grades') }}" class="btn btn-success mb-2">
+                <i class="fas fa-chart-bar mr-1"></i> View Grades
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-graduation-cap mr-2"></i>Your Courses</h3>
+    </div>
+    <div class="card-body">
+        {% if course_stats %}
+            <div class="course-grid">
+                {% for course in course_stats %}
+                <div class="course-card">
+                    {% if course.image_path %}
+                    <img src="{{ url_for('static', filename='uploads/' + course.image_path) }}" class="course-image" alt="{{ course.title }}">
+                    {% else %}
+                    <div class="course-card-header" style="height: 160px; display: flex; justify-content: center; align-items: center;">
+                        <i class="fas fa-book" style="font-size: 3rem; color: var(--primary-light);"></i>
+                    </div>
+                    {% endif %}
+                    <div class="course-card-header">
+                        <h4 class="course-title">{{ course.title }}</h4>
+                        <div class="course-teacher">
+                            <i class="fas fa-chalkboard-teacher mr-1"></i> Instructor: {{ course.teacher }}
+                        </div>
+                    </div>
+                    <div class="course-card-body">
+                        <div class="mb-2">
+                            <strong><i class="fas fa-tasks mr-1"></i> Assignments:</strong> 
+                            <span class="badge {% if course.completed_assignments == course.total_assignments %}badge-success{% else %}badge-primary{% endif %}">
+                                {{ course.completed_assignments }}/{{ course.total_assignments }}
+                            </span>
+                        </div>
+                        <div>
+                            <strong><i class="fas fa-chart-line mr-1"></i> Progress:</strong>
+                            <div class="progress mt-1">
+                                <div class="progress-bar {% if course.progress > 80 %}bg-success{% endif %}" 
+                                     style="width: {{ course.progress }}%;" 
+                                     aria-valuenow="{{ course.progress }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            <div class="text-right text-muted mt-1" style="font-size: 0.8rem;">
+                                {{ course.progress }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="course-card-footer">
+                        <a href="{{ url_for('student.view_course', course_id=course.id) }}" class="btn btn-primary">
+                            <i class="fas fa-eye mr-1"></i> View Course
+                        </a>
+                        <a href="{{ url_for('student.view_course_modules', course_id=course.id) }}" class="btn btn-info">
+                            <i class="fas fa-list mr-1"></i> View Modules
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-book-open mb-3" style="font-size: 3rem; color: var(--text-light);"></i>
+                <p>You are not enrolled in any courses yet.</p>
+                <a href="{{ url_for('student.browse_courses') }}" class="btn btn-primary">
+                    <i class="fas fa-search mr-1"></i> Browse available courses
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

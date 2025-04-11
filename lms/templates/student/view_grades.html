@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}My Grades{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>My Grades</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">My Grades</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    {% if course_data %}
+        {% for data in course_data %}
+            <div class="row mb-4">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3>{{ data.course.title }}</h3>
+                            <div>
+                                {% if data.overall_grade is not none %}
+                                    <span class="badge 
+                                        {% if data.overall_grade >= 90 %}badge-success
+                                        {% elif data.overall_grade >= 80 %}badge-info
+                                        {% elif data.overall_grade >= 70 %}badge-primary
+                                        {% elif data.overall_grade >= 60 %}badge-warning
+                                        {% else %}badge-danger
+                                        {% endif %}">
+                                        {{ data.overall_grade|round(1) }}%
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Not Graded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <h4>Course Completion</h4>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar bg-info" role="progressbar" 
+                                             style="width: {{ data.completion_percentage }}%" 
+                                             aria-valuenow="{{ data.completion_percentage }}" 
+                                             aria-valuemin="0" aria-valuemax="100">
+                                            {{ data.completion_percentage|round }}%
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-right">
+                                    <a href="{{ url_for('student.view_course_modules', course_id=data.course.id) }}" class="btn btn-primary">
+                                        View Course Modules
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Assignment Grades -->
+                            {% if data.assignment_grades %}
+                                <h4>Assignment Grades</h4>
+                                <div class="table-responsive mb-4">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Assignment</th>
+                                                <th>Grade</th>
+                                                <th>Feedback</th>
+                                                <th>Submitted</th>
+                                                <th>Graded</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for grade in data.assignment_grades %}
+                                                <tr>
+                                                    <td>{{ grade.name }}</td>
+                                                    <td>
+                                                        <span class="badge 
+                                                            {% if grade.grade >= 90 %}badge-success
+                                                            {% elif grade.grade >= 80 %}badge-info
+                                                            {% elif grade.grade >= 70 %}badge-primary
+                                                            {% elif grade.grade >= 60 %}badge-warning
+                                                            {% else %}badge-danger
+                                                            {% endif %}">
+                                                            {{ grade.grade|round(1) }}%
+                                                        </span>
+                                                    </td>
+                                                    <td>{{ grade.feedback|truncate(30) if grade.feedback else 'No feedback' }}</td>
+                                                    <td>{{ grade.submitted_at.strftime('%Y-%m-%d') }}</td>
+                                                    <td>{{ grade.graded_at.strftime('%Y-%m-%d') if grade.graded_at else 'N/A' }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Test Grades -->
+                            {% if data.test_grades %}
+                                <h4>Test Grades</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Test</th>
+                                                <th>Grade</th>
+                                                <th>Status</th>
+                                                <th>Completed</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for grade in data.test_grades %}
+                                                <tr>
+                                                    <td>{{ grade.name }}</td>
+                                                    <td>
+                                                        <span class="badge 
+                                                            {% if grade.grade >= 90 %}badge-success
+                                                            {% elif grade.grade >= 80 %}badge-info
+                                                            {% elif grade.grade >= 70 %}badge-primary
+                                                            {% elif grade.grade >= 60 %}badge-warning
+                                                            {% else %}badge-danger
+                                                            {% endif %}">
+                                                            {{ grade.grade|round(1) }}%
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        {% if grade.passed %}
+                                                            <span class="badge badge-success">Passed</span>
+                                                        {% else %}
+                                                            <span class="badge badge-danger">Failed</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ grade.completed_at.strftime('%Y-%m-%d') }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                            
+                            {% if not data.assignment_grades and not data.test_grades %}
+                                <div class="alert alert-info">
+                                    No grades are available for this course yet.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">
+            You are not enrolled in any courses yet. <a href="{{ url_for('student.browse_courses') }}">Browse available courses</a> to get started.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

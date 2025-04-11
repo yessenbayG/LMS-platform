@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Modules - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Manage Modules for {{ course.title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">{{ course.title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Add New Module</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('teacher.add_module', course_id=course.id) }}">
+                        {{ form.csrf_token }}
+                        <div class="form-group">
+                            {{ form.title.label }}
+                            {{ form.title(class="form-control") }}
+                            {% if form.title.errors %}
+                                {% for error in form.title.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            {{ form.description.label }}
+                            {{ form.description(class="form-control", rows=3) }}
+                            {% if form.description.errors %}
+                                {% for error in form.description.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            {{ form.order.label }}
+                            {{ form.order(class="form-control") }}
+                            <small class="form-text text-muted">Modules are displayed in ascending order.</small>
+                            {% if form.order.errors %}
+                                {% for error in form.order.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Course Modules</h3>
+                </div>
+                <div class="card-body">
+                    {% if modules %}
+                        <div class="list-group">
+                            {% for module in modules %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ module.title }}</h5>
+                                        <small>Order: {{ module.order }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ module.description }}</p>
+                                    <div class="mt-2">
+                                        <a href="{{ url_for('teacher.view_module', module_id=module.id) }}" class="btn btn-sm btn-primary">Manage Module</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">No modules have been created for this course yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

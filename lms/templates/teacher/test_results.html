@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Test Results - {{ test.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Test Results: {{ test.title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.manage_modules', course_id=course.id) }}">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.view_module', module_id=module.id) }}">{{ module.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.edit_test', test_id=test.id) }}">{{ test.title }}</a></li>
+                    <li class="breadcrumb-item active">Test Results</li>
+                </ol>
+            </nav>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Test Summary</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>Title:</strong> {{ test.title }}</p>
+                    <p><strong>Description:</strong> {{ test.description }}</p>
+                    <p><strong>Passing Score:</strong> {{ test.passing_score }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Student Results</h3>
+                </div>
+                <div class="card-body">
+                    {% if attempts %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Email</th>
+                                        <th>Attempts</th>
+                                        <th>Highest Score</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user, num_attempts, highest_score in attempts %}
+                                        <tr>
+                                            <td>{{ user.get_full_name() }}</td>
+                                            <td>{{ user.email }}</td>
+                                            <td>{{ num_attempts }}</td>
+                                            <td>{{ highest_score|round(1) }}%</td>
+                                            <td>
+                                                {% if highest_score >= test.passing_score %}
+                                                    <span class="badge badge-success">Passed</span>
+                                                {% else %}
+                                                    <span class="badge badge-danger">Failed</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">No students have attempted this test yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
