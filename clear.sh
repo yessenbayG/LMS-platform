@@ -28,6 +28,7 @@ else
         echo "Process killed successfully."
     fi
 fi
+
 # Check if port is now available
 sleep 1
 if lsof -i:5002 >/dev/null 2>&1; then
