@@ -31,6 +31,7 @@ class User(db.Model, UserMixin):
     created_courses = db.relationship('Course', backref='teacher', lazy='dynamic')
     enrollments = db.relationship('Enrollment', back_populates='student', lazy='dynamic')
     submissions = db.relationship('Submission', back_populates='student', lazy='dynamic')
+    # Message relationships are defined in the Message model using foreign_keys
     
     @property
     def password(self):

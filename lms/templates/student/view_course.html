@@ -37,6 +37,14 @@
                         {% if material.content_type == 'text' %}
                             <p>{{ material.content }}</p>
                         {% elif material.content_type == 'link' %}
+                            {% if material.is_youtube %}
+                                <div class="embed-responsive embed-responsive-16by9 mt-2 mb-2">
+                                    <iframe class="embed-responsive-item" 
+                                            src="{{ material.youtube_embed_url }}" 
+                                            allowfullscreen
+                                            style="width: 100%; height: 200px; border: none;"></iframe>
+                                </div>
+                            {% endif %}
                             <p><a href="{{ material.content }}" target="_blank">{{ material.content }}</a></p>
                         {% elif material.content_type == 'file' and material.file_path %}
                             <a href="{{ url_for('course.download_file', filename=material.file_path) }}" class="btn btn-sm btn-primary" target="_blank">Download</a>

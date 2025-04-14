@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Conversation with {{ other_user.get_full_name() }} - LMS{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <div class="breadcrumb-item"><a href="{{ url_for('messages.inbox') }}"><i class="fas fa-envelope mr-1"></i> Messages</a></div>
+    <div class="breadcrumb-item active">{{ other_user.get_full_name() }}</div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">
+            {% if other_user.is_admin() %}
+                <i class="fas fa-user-shield text-danger mr-1"></i>
+            {% elif other_user.is_teacher() %}
+                <i class="fas fa-chalkboard-teacher text-primary mr-1"></i>
+            {% elif other_user.is_student() %}
+                <i class="fas fa-user-graduate text-info mr-1"></i>
+            {% endif %}
+            {{ other_user.get_full_name() }}
+            <span class="badge badge-secondary ml-2">{{ other_user.role.name|capitalize }}</span>
+        </h3>
+        <a href="{{ url_for('messages.inbox') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Inbox
+        </a>
+    </div>
+    
+    <div class="card-body" style="max-height: 60vh; overflow-y: auto;" id="messages-container">
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message mb-3 {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
+                        <div class="message-bubble p-3 {% if message.sender_id == current_user.id %}bg-primary text-white{% else %}bg-light{% endif %}" 
+                             style="border-radius: 15px; max-width: 80%; {% if message.sender_id == current_user.id %}margin-left: auto;{% endif %}">
+                            {{ message.content|replace('\n', '<br>') | safe }}
+                            <div class="text-right mt-1">
+                                <small class="{% if message.sender_id == current_user.id %}text-white-50{% else %}text-muted{% endif %}">
+                                    {% if message.created_at %}
+                                        {{ message.created_at.strftime('%H:%M') }}
+                                    {% else %}
+                                        now
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-comments mb-3" style="font-size: 3rem; color: var(--text-light);"></i>
+                <p>No messages yet. Start the conversation!</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="card-footer">
+        <form method="POST" action="{{ url_for('messages.send_message', user_id=other_user.id) }}" id="message-form">
+            <div class="form-group mb-0">
+                <div class="input-group">
+                    <textarea class="form-control" name="content" placeholder="Type your message..." rows="2" required></textarea>
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane mr-1"></i> Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-scroll to bottom of messages on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const messagesContainer = document.getElementById('messages-container');
+        if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    });
+    
+    // Submit form when pressing Enter (but allow Shift+Enter for new lines)
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageInput = document.querySelector('textarea[name="content"]');
+        if (messageInput) {
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    document.getElementById('message-form').submit();
+                }
+            });
+        }
+    });
+    
+    // Check for new messages periodically
+    function updateUnreadCount() {
+        fetch('{{ url_for("messages.unread_count") }}')
+            .then(response => response.json())
+            .then(data => {
+                // Update any UI elements that show unread count
+                const unreadBadge = document.getElementById('messages-unread-badge');
+                if (unreadBadge) {
+                    if (data.count > 0) {
+                        unreadBadge.textContent = data.count;
+                        unreadBadge.style.display = 'inline-block';
+                    } else {
+                        unreadBadge.style.display = 'none';
+                    }
+                }
+            });
+    }
+    
+    // Update every 60 seconds
+    setInterval(updateUnreadCount, 60000);
+</script>
+{% endblock %}

@@ -8,6 +8,7 @@ db = SQLAlchemy()
 def init_db():
     """Initialize the database and create admin user if needed"""
     from lms.models.user import User, Role
+    from lms.models.message import Message
     
     print("Creating all database tables...")
     db.create_all()

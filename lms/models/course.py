@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 from lms.utils.db import db
 
 class Category(db.Model):
@@ -21,6 +22,8 @@ class Course(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     image_path = db.Column(db.String(255))
+    is_active = db.Column(db.Boolean, default=True)  # New field for course activation status
+    is_approved = db.Column(db.Boolean, default=False)  # Field for admin approval status
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -37,8 +40,8 @@ class Material(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
-    content_type = db.Column(db.String(20), nullable=False)  # text, file, link
-    content = db.Column(db.Text, nullable=False)
+    content_type = db.Column(db.String(20), nullable=False)  # text, file, link, youtube
+    content = db.Column(db.Text, nullable=True)  # Changed to nullable=True for file uploads
     file_path = db.Column(db.String(255))
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     module_id = db.Column(db.Integer, db.ForeignKey('modules.id'), nullable=True)
@@ -47,6 +50,32 @@ class Material(db.Model):
     
     def __repr__(self):
         return f'<Material {self.title}>'
+        
+    @property
+    def youtube_embed_url(self):
+        """Extract YouTube video ID and return embed URL if this is a YouTube link"""
+        if self.content_type != 'link':
+            return None
+            
+        # YouTube URL patterns
+        youtube_patterns = [
+            r'(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})',
+            r'(?:https?:\/\/)?(?:www\.)?youtu\.be\/([a-zA-Z0-9_-]{11})',
+            r'(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})'
+        ]
+        
+        for pattern in youtube_patterns:
+            match = re.search(pattern, self.content)
+            if match:
+                video_id = match.group(1)
+                return f'https://www.youtube.com/embed/{video_id}'
+        
+        return None
+        
+    @property
+    def is_youtube(self):
+        """Check if this material is a YouTube video"""
+        return self.content_type == 'link' and self.youtube_embed_url is not None
 
 class Assignment(db.Model):
     __tablename__ = 'assignments'

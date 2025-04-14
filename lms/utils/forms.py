@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, TextAreaField, SelectField, SubmitField, FloatField, BooleanField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
+from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, Optional
 from lms.models.user import User
 
 class LoginForm(FlaskForm):
@@ -66,6 +66,11 @@ class CourseCreationForm(FlaskForm):
     course_image = FileField('Course Image', validators=[FileAllowed(['jpg', 'png', 'jpeg', 'gif'], 'Images only!')])
     submit = SubmitField('Create Course')
 
+def content_required_for_text_or_link(form, field):
+    """Validate that content is provided for text or link types"""
+    if form.content_type.data in ['text', 'link'] and not field.data:
+        raise ValidationError('Content is required for text or link type materials')
+
 class MaterialForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(min=3, max=100)])
     content_type = SelectField('Type', choices=[
@@ -73,8 +78,8 @@ class MaterialForm(FlaskForm):
         ('file', 'File Upload'),
         ('link', 'External Link')
     ], validators=[DataRequired()])
-    content = TextAreaField('Content')
-    file = FileField('File', validators=[FileAllowed(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'jpg', 'png', 'zip'])])
+    content = TextAreaField('Content', validators=[content_required_for_text_or_link])
+    file = FileField('File', validators=[Optional(), FileAllowed(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'jpg', 'png', 'zip'])])
     submit = SubmitField('Add Material')
 
 class AssignmentForm(FlaskForm):

@@ -24,7 +24,7 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3>Module Materials</h3>
-                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addMaterialModal">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
                         Add Material
                     </button>
                 </div>
@@ -42,6 +42,14 @@
                                     {% elif material.content_type == 'file' %}
                                         <p class="mb-1">File: <a href="{{ url_for('static', filename=material.file_path) }}" target="_blank">{{ material.file_path.split('/')[-1] }}</a></p>
                                     {% elif material.content_type == 'link' %}
+                                        {% if material.is_youtube %}
+                                            <div class="embed-responsive embed-responsive-16by9 mt-2 mb-2">
+                                                <iframe class="embed-responsive-item" 
+                                                        src="{{ material.youtube_embed_url }}" 
+                                                        allowfullscreen
+                                                        style="width: 100%; height: 200px; border: none;"></iframe>
+                                            </div>
+                                        {% endif %}
                                         <p class="mb-1">Link: <a href="{{ material.content }}" target="_blank">{{ material.content }}</a></p>
                                     {% endif %}
                                 </div>
@@ -59,7 +67,7 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3>Module Tests</h3>
-                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addTestModal">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTestModal">
                         Add Test
                     </button>
                 </div>
@@ -74,8 +82,18 @@
                                     </div>
                                     <p class="mb-1">{{ test.description|truncate(100) }}</p>
                                     <div class="mt-2">
-                                        <a href="{{ url_for('teacher.edit_test', test_id=test.id) }}" class="btn btn-sm btn-primary">Edit Test</a>
-                                        <a href="{{ url_for('teacher.test_results', test_id=test.id) }}" class="btn btn-sm btn-info">View Results</a>
+                                        <a href="{{ url_for('teacher.edit_test', test_id=test.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit mr-1"></i> Edit
+                                        </a>
+                                        <a href="{{ url_for('teacher.test_results', test_id=test.id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-poll mr-1"></i> Results
+                                        </a>
+                                        <form action="{{ url_for('teacher.delete_test', test_id=test.id) }}" method="POST" class="d-inline ml-2">
+                                            <button type="submit" class="btn btn-sm btn-danger" 
+                                                    onclick="return confirm('Are you sure you want to delete this test? This will remove all questions, options, and student attempts associated with this test.')">
+                                                <i class="fas fa-trash mr-1"></i> Delete
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -95,9 +113,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="addMaterialModalLabel">Add New Material</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form method="POST" action="{{ url_for('teacher.add_module_material', module_id=module.id) }}" enctype="multipart/form-data">
@@ -114,7 +130,7 @@
                         {{ material_form.content.label }}
                         {{ material_form.content(class="form-control", rows=5) }}
                         <small class="form-text text-muted content-text">Enter text content for this material.</small>
-                        <small class="form-text text-muted content-link" style="display: none;">Enter the URL for this material.</small>
+                        <small class="form-text text-muted content-link" style="display: none;">Enter the URL for this material. YouTube links (youtube.com, youtu.be) will be automatically embedded as videos.</small>
                     </div>
                     <div class="form-group file-field" style="display: none;">
                         {{ material_form.file.label }}
@@ -135,9 +151,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="addTestModalLabel">Add New Test</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form method="POST" action="{{ url_for('teacher.add_test', module_id=module.id) }}">
@@ -167,6 +181,28 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Fix for Bootstrap 5 modals
+        // Initialize the modals only when needed to prevent errors
+        const initModals = () => {
+            const materialModalElem = document.getElementById('addMaterialModal');
+            const testModalElem = document.getElementById('addTestModal');
+            
+            // Add event listeners to the modal trigger buttons
+            document.querySelectorAll('[data-bs-toggle="modal"]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const target = this.getAttribute('data-bs-target');
+                    if (target === '#addMaterialModal' && materialModalElem) {
+                        new bootstrap.Modal(materialModalElem).show();
+                    } else if (target === '#addTestModal' && testModalElem) {
+                        new bootstrap.Modal(testModalElem).show();
+                    }
+                });
+            });
+        };
+        
+        initModals();
+        
+        // Dynamic form fields for material
         const contentTypeSelect = document.querySelector('select[name="content_type"]');
         const contentField = document.querySelector('.content-field');
         const contentTextHelp = document.querySelector('.content-text');
@@ -194,10 +230,14 @@
         }
         
         // Set initial state
-        updateFields();
+        if (contentTypeSelect) {
+            updateFields();
+            
+            // Update when content type changes
+            contentTypeSelect.addEventListener('change', updateFields);
+        }
         
-        // Update when content type changes
-        contentTypeSelect.addEventListener('change', updateFields);
+        // Each form already has its own CSRF token from WTForms
     });
 </script>
 {% endblock %}
