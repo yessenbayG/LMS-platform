@@ -14,38 +14,44 @@
     <nav class="navbar">
         <div class="container navbar-container">
             <a href="/" class="navbar-logo">
-                <i class="fas fa-graduation-cap mr-2"></i> SDULearn LMS
+                <i class="fas fa-graduation-cap"></i> SDULearn LMS
             </a>
-            <ul class="navbar-links">
+            <button class="navbar-toggle" id="navbar-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul class="navbar-links" id="navbar-links">
                 {% if current_user.is_authenticated %}
                     {% if current_user.is_admin() %}
-                        <li><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt mr-1"></i> Dashboard</a></li>
-                        <li><a href="{{ url_for('admin.manage_users') }}"><i class="fas fa-users mr-1"></i> Users</a></li>
-                        <li><a href="{{ url_for('admin.manage_teachers') }}"><i class="fas fa-chalkboard-teacher mr-1"></i> Teachers</a></li>
-                        <li><a href="{{ url_for('admin.manage_courses') }}"><i class="fas fa-book mr-1"></i> Courses</a></li>
-                        <li><a href="{{ url_for('messages.inbox') }}"><i class="fas fa-envelope mr-1"></i> Messages
+                        <li><a href="{{ url_for('admin.dashboard') }}" {% if request.path.startswith('/admin/dashboard') %}class="active"{% endif %}><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="{{ url_for('admin.manage_users') }}" {% if request.path.startswith('/admin/users') %}class="active"{% endif %}><i class="fas fa-users"></i> Users</a></li>
+                        <li><a href="{{ url_for('admin.manage_teachers') }}" {% if request.path.startswith('/admin/teachers') %}class="active"{% endif %}><i class="fas fa-chalkboard-teacher"></i> Teachers</a></li>
+                        <li><a href="{{ url_for('admin.manage_courses') }}" {% if request.path.startswith('/admin/courses') %}class="active"{% endif %}><i class="fas fa-book"></i> Courses</a></li>
+                        <li><a href="{{ url_for('messages.inbox') }}" {% if request.path.startswith('/messages') %}class="active"{% endif %}><i class="fas fa-envelope"></i> Messages
                             <span id="messages-unread-badge" class="badge badge-danger" style="display: none;"></span>
                         </a></li>
                     {% elif current_user.is_teacher() %}
-                        <li><a href="{{ url_for('teacher.dashboard') }}"><i class="fas fa-tachometer-alt mr-1"></i> Dashboard</a></li>
-                        <li><a href="{{ url_for('teacher.create_course') }}"><i class="fas fa-plus-circle mr-1"></i> Create Course</a></li>
-                        <li><a href="{{ url_for('messages.inbox') }}"><i class="fas fa-envelope mr-1"></i> Messages
+                        <li><a href="{{ url_for('teacher.dashboard') }}" {% if request.path.startswith('/teacher/dashboard') %}class="active"{% endif %}><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="{{ url_for('teacher.create_course') }}" {% if request.path.startswith('/teacher/create-course') %}class="active"{% endif %}><i class="fas fa-plus-circle"></i> Create Course</a></li>
+                        {% if hasattr(current_user, 'certificate_path') %}
+                        <li><a href="{{ url_for('teacher.certificate') }}" {% if request.path.startswith('/teacher/certificate') %}class="active"{% endif %}><i class="fas fa-certificate"></i> Certificate</a></li>
+                        {% endif %}
+                        <li><a href="{{ url_for('messages.inbox') }}" {% if request.path.startswith('/messages') %}class="active"{% endif %}><i class="fas fa-envelope"></i> Messages
                             <span id="messages-unread-badge" class="badge badge-danger" style="display: none;"></span>
                         </a></li>
                     {% elif current_user.is_student() %}
-                        <li><a href="{{ url_for('student.dashboard') }}"><i class="fas fa-tachometer-alt mr-1"></i> Dashboard</a></li>
-                        <li><a href="{{ url_for('student.browse_courses') }}"><i class="fas fa-book-open mr-1"></i> Courses</a></li>
-                        <li><a href="{{ url_for('student.my_assignments') }}"><i class="fas fa-tasks mr-1"></i> Assignments</a></li>
-                        <li><a href="{{ url_for('student.view_grades') }}"><i class="fas fa-chart-bar mr-1"></i> Grades</a></li>
-                        <li><a href="{{ url_for('messages.inbox') }}"><i class="fas fa-envelope mr-1"></i> Messages
+                        <li><a href="{{ url_for('student.dashboard') }}" {% if request.path.startswith('/student/dashboard') %}class="active"{% endif %}><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="{{ url_for('student.browse_courses') }}" {% if request.path.startswith('/student/courses') %}class="active"{% endif %}><i class="fas fa-book-open"></i> Courses</a></li>
+                        <li><a href="{{ url_for('student.my_assignments') }}" {% if request.path.startswith('/student/assignments') %}class="active"{% endif %}><i class="fas fa-tasks"></i> Assignments</a></li>
+                        <li><a href="{{ url_for('student.view_grades') }}" {% if request.path.startswith('/student/grades') %}class="active"{% endif %}><i class="fas fa-chart-bar"></i> Grades</a></li>
+                        <li><a href="{{ url_for('messages.inbox') }}" {% if request.path.startswith('/messages') %}class="active"{% endif %}><i class="fas fa-envelope"></i> Messages
                             <span id="messages-unread-badge" class="badge badge-danger" style="display: none;"></span>
                         </a></li>
                     {% endif %}
-                    <li><a href="{{ url_for('auth.profile') }}"><i class="fas fa-user-circle mr-1"></i> {{ current_user.first_name }}</a></li>
-                    <li><a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt mr-1"></i> Logout</a></li>
+                    <li><a href="{{ url_for('auth.profile') }}" {% if request.path.startswith('/auth/profile') %}class="active"{% endif %}><i class="fas fa-user-circle"></i> {{ current_user.first_name }}</a></li>
+                    <li><a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                 {% else %}
-                    <li><a href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt mr-1"></i> Login</a></li>
-                    <li><a href="{{ url_for('auth.register') }}"><i class="fas fa-user-plus mr-1"></i> Register</a></li>
+                    <li><a href="{{ url_for('auth.login') }}" {% if request.path.startswith('/auth/login') %}class="active"{% endif %}><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                    <li><a href="{{ url_for('auth.register') }}" {% if request.path.startswith('/auth/register') %}class="active"{% endif %}><i class="fas fa-user-plus"></i> Register</a></li>
                 {% endif %}
             </ul>
         </div>
@@ -77,22 +83,88 @@
     <footer class="bg-white py-4 mt-5 border-top">
         <div class="container">
             <div class="row">
-                <div class="col-md-6">
-                    <p class="mb-0 text-muted">© 2025 SDULearn LMS. All rights reserved.</p>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-graduation-cap text-primary mr-2" style="font-size: 2rem;"></i>
+                        <h5 class="mb-0">SDULearn LMS</h5>
+                    </div>
+                    <p class="text-muted">A modern learning management system for Suleyman Demirel University students and teachers.</p>
+                    <div class="mt-3">
+                        <a href="#" class="btn btn-sm btn-outline-primary mr-2"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary mr-2"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary mr-2"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
                 </div>
-                <div class="col-md-6 text-right">
-                    <p class="mb-0 text-muted">Made with best impact by SDU team</p>
+                <div class="col-md-2">
+                    <h6 class="mb-3 text-primary">Navigate</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="/" class="text-muted">Home</a></li>
+                        <li class="mb-2"><a href="/auth/login" class="text-muted">Login</a></li>
+                        <li class="mb-2"><a href="/auth/register" class="text-muted">Register</a></li>
+                    </ul>
                 </div>
+                <div class="col-md-2">
+                    <h6 class="mb-3 text-primary">Resources</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#" class="text-muted">Help Center</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted">Documentation</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted">Contact Support</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="mb-3 text-primary">Contact Us</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="fas fa-map-marker-alt text-primary mr-2"></i>
+                            <span class="text-muted">SDU Campus, Almaty, Kazakhstan</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="fas fa-envelope text-primary mr-2"></i>
+                            <span class="text-muted">info@sdu.edu.kz</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="fas fa-phone text-primary mr-2"></i>
+                            <span class="text-muted">+7 (727) 307-95-60</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="mt-4 mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <p class="mb-0 text-muted">© 2025 SDULearn LMS. All rights reserved.</p>
+                <p class="mb-0 text-muted">Made with <i class="fas fa-heart text-danger"></i> by SDU team</p>
             </div>
         </div>
     </footer>
 
     {% block scripts %}{% endblock %}
     
-    {% if current_user.is_authenticated %}
     <script>
-        // Initial unread message count check
         document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle
+            const navbarToggle = document.getElementById('navbar-toggle');
+            const navbarLinks = document.getElementById('navbar-links');
+            
+            if (navbarToggle && navbarLinks) {
+                navbarToggle.addEventListener('click', function() {
+                    navbarLinks.classList.toggle('show');
+                    navbarToggle.classList.toggle('active');
+                });
+            }
+            
+            // Add box shadow to navbar on scroll
+            const navbar = document.querySelector('.navbar');
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 10) {
+                    navbar.style.boxShadow = 'var(--shadow-lg)';
+                } else {
+                    navbar.style.boxShadow = 'var(--shadow-md)';
+                }
+            });
+            
+            {% if current_user.is_authenticated %}
+            // Initial unread message count check
             fetch('{{ url_for("messages.unread_count") }}')
                 .then(response => response.json())
                 .then(data => {
@@ -105,9 +177,36 @@
                             unreadBadge.style.display = 'none';
                         }
                     }
+                })
+                .catch(error => console.error('Error fetching unread messages:', error));
+            {% endif %}
+            
+            // Enable tooltips
+            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
                 });
+            }
+            
+            // Animate elements when they come into view
+            const animateOnScroll = function() {
+                const elements = document.querySelectorAll('.animate-on-scroll');
+                
+                elements.forEach(element => {
+                    const elementPosition = element.getBoundingClientRect().top;
+                    const windowHeight = window.innerHeight;
+                    
+                    if (elementPosition < windowHeight - 50) {
+                        element.classList.add('animated');
+                    }
+                });
+            };
+            
+            // Initial check and add scroll listener
+            animateOnScroll();
+            window.addEventListener('scroll', animateOnScroll);
         });
     </script>
-    {% endif %}
 </body>
 </html>
