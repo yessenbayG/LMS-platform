@@ -45,27 +45,33 @@
                                     
                                     {% if data.question.question_type == 'multiple_choice' %}
                                         <div class="form-group">
-                                            <label><strong>Select all correct answers:</strong></label>
-                                            {% for option in data.options %}
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="question_{{ data.question.id }}" value="{{ option.id }}" id="option_{{ option.id }}">
-                                                    <label class="form-check-label" for="option_{{ option.id }}">
-                                                        {{ option.option_text }}
-                                                    </label>
-                                                </div>
-                                            {% endfor %}
+                                            <label class="mb-3"><strong>Select all correct answers:</strong></label>
+                                            <div class="custom-control-group">
+                                                {% for option in data.options %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="question_{{ data.question.id }}" value="{{ option.id }}" id="option_{{ option.id }}">
+                                                        <span class="checkmark"></span>
+                                                        <label class="form-check-label" for="option_{{ option.id }}">
+                                                            {{ option.option_text }}
+                                                        </label>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
                                         </div>
                                     {% elif data.question.question_type == 'true_false' %}
                                         <div class="form-group">
-                                            <label><strong>Select one:</strong></label>
-                                            {% for option in data.options %}
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="question_{{ data.question.id }}" value="{{ option.id }}" id="option_{{ option.id }}">
-                                                    <label class="form-check-label" for="option_{{ option.id }}">
-                                                        {{ option.option_text }}
-                                                    </label>
-                                                </div>
-                                            {% endfor %}
+                                            <label class="mb-3"><strong>Select one:</strong></label>
+                                            <div class="custom-control-group">
+                                                {% for option in data.options %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="question_{{ data.question.id }}" value="{{ option.id }}" id="option_{{ option.id }}">
+                                                        <span class="radio-button"></span>
+                                                        <label class="form-check-label" for="option_{{ option.id }}">
+                                                            {{ option.option_text }}
+                                                        </label>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
                                         </div>
                                     {% elif data.question.question_type == 'essay' %}
                                         <div class="form-group">
@@ -77,8 +83,9 @@
                             </div>
                         {% endfor %}
                         
-                        <div class="form-group text-center">
-                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <div class="form-group text-center mt-5">
+                            {{ form.submit(class="btn btn-primary btn-lg px-5 shadow") }}
+                            <p class="mt-3 text-muted"><small><i class="fas fa-info-circle"></i> Once submitted, you won't be able to change your answers.</small></p>
                         </div>
                     </form>
                 </div>

@@ -32,9 +32,7 @@
                     {% elif current_user.is_teacher() %}
                         <li><a href="{{ url_for('teacher.dashboard') }}" {% if request.path.startswith('/teacher/dashboard') %}class="active"{% endif %}><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                         <li><a href="{{ url_for('teacher.create_course') }}" {% if request.path.startswith('/teacher/create-course') %}class="active"{% endif %}><i class="fas fa-plus-circle"></i> Create Course</a></li>
-                        {% if hasattr(current_user, 'certificate_path') %}
                         <li><a href="{{ url_for('teacher.certificate') }}" {% if request.path.startswith('/teacher/certificate') %}class="active"{% endif %}><i class="fas fa-certificate"></i> Certificate</a></li>
-                        {% endif %}
                         <li><a href="{{ url_for('messages.inbox') }}" {% if request.path.startswith('/messages') %}class="active"{% endif %}><i class="fas fa-envelope"></i> Messages
                             <span id="messages-unread-badge" class="badge badge-danger" style="display: none;"></span>
                         </a></li>

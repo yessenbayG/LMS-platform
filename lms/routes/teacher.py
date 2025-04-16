@@ -160,44 +160,50 @@ def delete_course(course_id):
 @login_required
 @teacher_required
 def certificate():
-    # Check if certificate functionality is available
-    if not hasattr(current_user, 'certificate_path'):
-        flash('Certificate functionality is not available in this version.', 'warning')
-        return redirect(url_for('teacher.dashboard'))
+    try:
+        # Check if certificate functionality is available
+        has_certificate_attr = hasattr(current_user, 'certificate_path')
+        if not has_certificate_attr:
+            flash('Certificate functionality is not available in this version.', 'warning')
+            return redirect(url_for('teacher.dashboard'))
+            
+        form = CertificateForm()
         
-    form = CertificateForm()
-    
-    if form.validate_on_submit():
-        # Handle certificate upload
-        if form.certificate.data:
-            try:
-                certificate_file = form.certificate.data
-                filename = secure_filename(certificate_file.filename)
-                # Create a unique filename
-                unique_filename = f"certificate_{current_user.id}_{int(datetime.utcnow().timestamp())}_{filename}"
-                certificate_path = os.path.join('uploads', 'certificates', unique_filename)
-                
-                # Make sure the directory exists
-                upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'certificates')
-                os.makedirs(upload_dir, exist_ok=True)
-                
-                # Save the file
-                certificate_file.save(os.path.join(upload_dir, unique_filename))
-                
-                # Update user record
-                current_user.certificate_path = certificate_path
-                current_user.certificate_submitted_at = datetime.utcnow()
-                current_user.certificate_verified = False
-                
-                db.session.commit()
-                flash('Your certificate has been submitted and is awaiting verification.', 'success')
-                return redirect(url_for('teacher.certificate'))
-            except Exception as e:
-                db.session.rollback()
-                current_app.logger.error(f"Certificate upload error: {str(e)}")
-                flash(f'Error uploading certificate: {str(e)}', 'danger')
-    
-    return render_template('teacher/certificate.html', form=form)
+        if form.validate_on_submit():
+            # Handle certificate upload
+            if form.certificate.data:
+                try:
+                    certificate_file = form.certificate.data
+                    filename = secure_filename(certificate_file.filename)
+                    # Create a unique filename
+                    unique_filename = f"certificate_{current_user.id}_{int(datetime.utcnow().timestamp())}_{filename}"
+                    certificate_path = os.path.join('uploads', 'certificates', unique_filename)
+                    
+                    # Make sure the directory exists
+                    upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'certificates')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    
+                    # Save the file
+                    certificate_file.save(os.path.join(upload_dir, unique_filename))
+                    
+                    # Update user record
+                    current_user.certificate_path = certificate_path
+                    current_user.certificate_submitted_at = datetime.utcnow()
+                    current_user.certificate_verified = False
+                    
+                    db.session.commit()
+                    flash('Your certificate has been submitted and is awaiting verification.', 'success')
+                    return redirect(url_for('teacher.certificate'))
+                except Exception as e:
+                    db.session.rollback()
+                    current_app.logger.error(f"Certificate upload error: {str(e)}")
+                    flash(f'Error uploading certificate: {str(e)}', 'danger')
+        
+        return render_template('teacher/certificate.html', form=form)
+    except Exception as e:
+        current_app.logger.error(f"Certificate route error: {str(e)}")
+        flash('An error occurred accessing the certificate feature. Please contact support.', 'danger')
+        return redirect(url_for('teacher.dashboard'))
 
 @teacher_bp.route('/courses/create', methods=['GET', 'POST'])
 @login_required
@@ -205,8 +211,8 @@ def certificate():
 def create_course():
     # Check if certificates are enabled and required
     try:
-        certificate_required = hasattr(current_user, 'certificate_path')
-        if certificate_required and not current_user.has_verified_certificate():
+        # Use the has_verified_certificate method which has built-in error handling
+        if not current_user.can_create_courses():
             flash('You need to submit your teaching certificate and have it verified before creating courses.', 'warning')
             return redirect(url_for('teacher.certificate'))
     except Exception as e:
