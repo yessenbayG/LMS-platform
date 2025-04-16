@@ -1079,3 +1079,37 @@ label {
   background-color: #f5d1d1;
   color: #8c0a0a;
 }
+
+/* Message styles */
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.message-bubble {
+  display: inline-block;
+  max-width: 80%;
+  word-break: break-word;
+}
+
+.message-sent .message-bubble {
+  background-color: var(--primary);
+  color: white;
+  border-radius: 15px 15px 0 15px;
+  margin-left: auto;
+}
+
+.message-received .message-bubble {
+  background-color: var(--secondary);
+  border-radius: 15px 15px 15px 0;
+}
+
+#messages-unread-badge {
+  font-size: 0.7rem;
+  padding: 0.25em 0.5em;
+  border-radius: 10px;
+  position: relative;
+  top: -8px;
+  margin-left: -5px;
+}

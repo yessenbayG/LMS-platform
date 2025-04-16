@@ -27,6 +27,11 @@ class User(db.Model, UserMixin):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Teacher certification fields
+    certificate_path = db.Column(db.String(255), nullable=True, default=None)
+    certificate_verified = db.Column(db.Boolean, nullable=True, default=False)
+    certificate_submitted_at = db.Column(db.DateTime, nullable=True, default=None)
+    
     # Relationships
     created_courses = db.relationship('Course', backref='teacher', lazy='dynamic')
     enrollments = db.relationship('Enrollment', back_populates='student', lazy='dynamic')
@@ -60,6 +65,20 @@ class User(db.Model, UserMixin):
     
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
+    
+    def has_verified_certificate(self):
+        try:
+            return self.certificate_verified and self.certificate_path is not None
+        except:
+            # If the certificate fields don't exist
+            return False
+    
+    def can_create_courses(self):
+        try:
+            return self.is_teacher() and self.has_verified_certificate()
+        except:
+            # Default to True if the certificate fields don't exist
+            return self.is_teacher()
     
     def __repr__(self):
         return f'<User {self.email}>'

@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from lms.utils.db import db
-from lms.utils.forms import TeacherCreationForm, CourseCreationForm, ModuleForm
+from lms.utils.forms import TeacherCreationForm, CourseCreationForm, ModuleForm, AdminCreationForm
 from lms.models.user import User, Role
+from werkzeug.security import generate_password_hash
+from datetime import datetime
 from lms.models.course import (Course, Category, Enrollment, Module, Material, Test,
                                Assignment, Question, QuestionOption)
 from werkzeug.utils import secure_filename
@@ -85,6 +87,40 @@ def manage_users():
     
     return render_template('admin/users.html', users=users, current_filter=role_filter)
 
+@admin_bp.route('/admins/create', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def create_admin():
+    form = AdminCreationForm()
+    if form.validate_on_submit():
+        admin_role = Role.query.filter_by(name='admin').first()
+        if not admin_role:
+            flash('Admin role not found in database. Please contact the system administrator.', 'danger')
+            return render_template('admin/create_admin.html', form=form)
+        
+        # Create new admin user
+        admin = User(
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            email=form.email.data,
+            role_id=admin_role.id,
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        admin.password_hash = generate_password_hash(form.password.data)
+        
+        try:
+            db.session.add(admin)
+            db.session.commit()
+            flash('Administrator account created successfully!', 'success')
+            return redirect(url_for('admin.manage_users', role='admin'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating administrator account: {str(e)}', 'danger')
+    
+    return render_template('admin/create_admin.html', form=form)
+
 @admin_bp.route('/users/toggle/<int:user_id>')
 @login_required
 @admin_required
@@ -107,8 +143,11 @@ def toggle_user_status(user_id):
 @login_required
 @admin_required
 def manage_courses():
-    courses = Course.query.all()
-    return render_template('admin/courses.html', courses=courses)
+    pending_courses = Course.query.filter_by(is_approved=False).all()
+    approved_courses = Course.query.filter_by(is_approved=True).all()
+    return render_template('admin/courses.html', 
+                          pending_courses=pending_courses,
+                          approved_courses=approved_courses)
 
 @admin_bp.route('/courses/edit/<int:course_id>', methods=['GET', 'POST'])
 @login_required
@@ -209,3 +248,52 @@ def delete_course(course_id):
     
     flash(f'Course "{course.title}" has been deleted.', 'success')
     return redirect(url_for('admin.manage_courses'))
+
+@admin_bp.route('/courses/approve/<int:course_id>', methods=['POST'])
+@login_required
+@admin_required
+def approve_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    
+    # Approve the course
+    course.is_approved = True
+    db.session.commit()
+    
+    flash(f'Course "{course.title}" has been approved.', 'success')
+    return redirect(url_for('admin.manage_courses'))
+
+@admin_bp.route('/teachers/verify-certificate/<int:user_id>')
+@login_required
+@admin_required
+def verify_certificate(user_id):
+    teacher = User.query.get_or_404(user_id)
+    
+    # Check if the user is a teacher and has a certificate to verify
+    if not teacher.is_teacher() or not teacher.certificate_path:
+        flash('Invalid teacher or no certificate found.', 'danger')
+        return redirect(url_for('admin.manage_teachers'))
+    
+    # Verify the certificate
+    teacher.certificate_verified = True
+    db.session.commit()
+    
+    flash(f'Certificate for {teacher.get_full_name()} has been verified.', 'success')
+    return redirect(url_for('admin.manage_teachers'))
+
+@admin_bp.route('/teachers/unverify-certificate/<int:user_id>')
+@login_required
+@admin_required
+def unverify_certificate(user_id):
+    teacher = User.query.get_or_404(user_id)
+    
+    # Check if the user is a teacher
+    if not teacher.is_teacher():
+        flash('Invalid teacher account.', 'danger')
+        return redirect(url_for('admin.manage_teachers'))
+    
+    # Unverify the certificate
+    teacher.certificate_verified = False
+    db.session.commit()
+    
+    flash(f'Certificate verification for {teacher.get_full_name()} has been revoked.', 'success')
+    return redirect(url_for('admin.manage_teachers'))

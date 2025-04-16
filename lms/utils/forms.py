@@ -15,8 +15,6 @@ class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
-    is_admin = BooleanField('Register as Admin')
-    admin_code = PasswordField('Admin Registration Code')
     submit = SubmitField('Register')
     
     def validate_email(self, email):
@@ -31,6 +29,19 @@ class TeacherCreationForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Create Teacher Account')
+    
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            raise ValidationError('Email is already registered. Please use a different email.')
+            
+class AdminCreationForm(FlaskForm):
+    first_name = StringField('First Name', validators=[DataRequired(), Length(min=2, max=50)])
+    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=2, max=50)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Create Administrator Account')
     
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
@@ -126,3 +137,11 @@ class OptionForm(FlaskForm):
 
 class TestAttemptForm(FlaskForm):
     submit = SubmitField('Submit Test')
+    
+class CertificateForm(FlaskForm):
+    certificate = FileField('Upload Certificate/Diploma', validators=[
+        DataRequired(),
+        FileAllowed(['pdf', 'jpg', 'jpeg', 'png'], 'Only PDF and images are allowed!')
+    ])
+    description = TextAreaField('Certificate Description', validators=[DataRequired()])
+    submit = SubmitField('Submit Certificate')

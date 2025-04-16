@@ -3,51 +3,139 @@
 {% block title %}Manage Users - LMS{% endblock %}
 
 {% block content %}
-<h1>Manage Users</h1>
+<div class="breadcrumb">
+    <div class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt mr-1"></i> Dashboard</a></div>
+    <div class="breadcrumb-item active">Manage Users</div>
+</div>
 
-<div class="mb-3">
-    <a href="{{ url_for('admin.manage_users', role='all') }}" class="btn {% if current_filter == 'all' %}btn-primary{% else %}btn-secondary{% endif %}">All Users</a>
-    <a href="{{ url_for('admin.manage_users', role='admin') }}" class="btn {% if current_filter == 'admin' %}btn-primary{% else %}btn-secondary{% endif %}">Admins</a>
-    <a href="{{ url_for('admin.manage_users', role='teacher') }}" class="btn {% if current_filter == 'teacher' %}btn-primary{% else %}btn-secondary{% endif %}">Teachers</a>
-    <a href="{{ url_for('admin.manage_users', role='student') }}" class="btn {% if current_filter == 'student' %}btn-primary{% else %}btn-secondary{% endif %}">Students</a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-users mr-2"></i>Manage Users</h1>
+    <div>
+        {% if current_filter == 'admin' or current_filter == 'all' %}
+            <a href="{{ url_for('admin.create_admin') }}" class="btn btn-success mr-2">
+                <i class="fas fa-user-shield mr-1"></i> Create Administrator
+            </a>
+        {% endif %}
+        {% if current_filter == 'teacher' or current_filter == 'all' %}
+            <a href="{{ url_for('admin.create_teacher') }}" class="btn btn-info">
+                <i class="fas fa-chalkboard-teacher mr-1"></i> Create Teacher
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">User Filters</h3>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="btn-group btn-group-lg w-100">
+            <a href="{{ url_for('admin.manage_users', role='all') }}" class="btn {% if current_filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-users mr-1"></i> All Users
+            </a>
+            <a href="{{ url_for('admin.manage_users', role='admin') }}" class="btn {% if current_filter == 'admin' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-user-shield mr-1"></i> Administrators
+            </a>
+            <a href="{{ url_for('admin.manage_users', role='teacher') }}" class="btn {% if current_filter == 'teacher' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-chalkboard-teacher mr-1"></i> Teachers
+            </a>
+            <a href="{{ url_for('admin.manage_users', role='student') }}" class="btn {% if current_filter == 'student' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-user-graduate mr-1"></i> Students
+            </a>
+        </div>
+    </div>
 </div>
 
 <div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">
+            {% if current_filter == 'admin' %}
+                <i class="fas fa-user-shield mr-2"></i>Administrators
+            {% elif current_filter == 'teacher' %}
+                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            {% elif current_filter == 'student' %}
+                <i class="fas fa-user-graduate mr-2"></i>Students
+            {% else %}
+                <i class="fas fa-users mr-2"></i>All Users
+            {% endif %}
+        </h3>
+    </div>
     <div class="card-body">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.first_name }} {{ user.last_name }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.role.name }}</td>
-                    <td>{{ 'Active' if user.is_active else 'Inactive' }}</td>
-                    <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
-                    <td>
-                        {% if user.id != current_user.id %}
-                            {% if user.is_active %}
-                                <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" class="btn btn-sm btn-warning">Deactivate</a>
-                            {% else %}
-                                <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" class="btn btn-sm btn-success">Activate</a>
-                            {% endif %}
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% if users %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                {% if user.role.name == 'admin' %}
+                                    <i class="fas fa-user-shield text-danger mr-1"></i>
+                                {% elif user.role.name == 'teacher' %}
+                                    <i class="fas fa-chalkboard-teacher text-primary mr-1"></i>
+                                {% else %}
+                                    <i class="fas fa-user-graduate text-info mr-1"></i>
+                                {% endif %}
+                                {{ user.first_name }} {{ user.last_name }}
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.role.name == 'admin' %}
+                                    <span class="badge badge-danger">Administrator</span>
+                                {% elif user.role.name == 'teacher' %}
+                                    <span class="badge badge-primary">Teacher</span>
+                                {% else %}
+                                    <span class="badge badge-info">Student</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if user.id != current_user.id %}
+                                    {% if user.is_active %}
+                                        <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" 
+                                           class="btn btn-sm btn-warning"
+                                           onclick="return confirm('Are you sure you want to deactivate this user?')">
+                                            <i class="fas fa-user-slash mr-1"></i> Deactivate
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" 
+                                           class="btn btn-sm btn-success"
+                                           onclick="return confirm('Are you sure you want to activate this user?')">
+                                            <i class="fas fa-user-check mr-1"></i> Activate
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted"><i>Current User</i></span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle mr-1"></i> No users found matching the selected criteria.
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

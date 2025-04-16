@@ -74,16 +74,16 @@ A streamlined Learning Management System built with Python and Flask, focusing o
 The system is initialized with the following demo accounts:
 
 - **Admin**:
-  - Email: admin@example.com
-  - Password: adminpassword
+  - Email: admin@gmail.com
+  - Password: qweasdqwe123
 
 - **Teacher**:
-  - Email: teacher@example.com
-  - Password: teacherpass
+  - Email: teacher@gmail.com
+  - Password: qwesadqwe123
 
 - **Student**:
-  - Email: student@example.com
-  - Password: studentpass
+  - Email: student@gmail.com
+  - Password: qweasdqwe123
 
 ## Technical Stack
 
@@ -115,4 +115,4 @@ The system is initialized with the following demo accounts:
 
 ## License
 
-This project is licensed under the MIT License
+This project is licensed under the SDU University

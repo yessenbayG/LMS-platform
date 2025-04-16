@@ -70,8 +70,8 @@ def dashboard():
 @login_required
 @student_required
 def browse_courses():
-    # Get all available courses
-    courses = Course.query.all()
+    # Get all available ACTIVE and APPROVED courses
+    courses = Course.query.filter_by(is_active=True, is_approved=True).all()
     
     # Get courses this student is already enrolled in
     enrollments = Enrollment.query.filter_by(student_id=current_user.id).all()
@@ -86,6 +86,18 @@ def browse_courses():
 @student_required
 def view_course(course_id):
     course = Course.query.get_or_404(course_id)
+    
+    # Check if course is active
+    if not course.is_active:
+        # If student is not enrolled, don't show inactive courses
+        enrollment = Enrollment.query.filter_by(
+            student_id=current_user.id,
+            course_id=course.id
+        ).first()
+        
+        if not enrollment:
+            flash('This course is not currently available.', 'warning')
+            return redirect(url_for('student.browse_courses'))
     
     # Check if student is enrolled
     enrollment = Enrollment.query.filter_by(
@@ -118,6 +130,11 @@ def view_course(course_id):
 @student_required
 def enroll_course(course_id):
     course = Course.query.get_or_404(course_id)
+    
+    # Check if course is active
+    if not course.is_active:
+        flash('This course is not currently available for enrollment.', 'warning')
+        return redirect(url_for('student.browse_courses'))
     
     # Check if already enrolled
     enrollment = Enrollment.query.filter_by(

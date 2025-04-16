@@ -3,44 +3,104 @@
 {% block title %}Manage Teachers - LMS{% endblock %}
 
 {% block content %}
-<h1>Manage Teachers</h1>
+<div class="breadcrumb">
+    <div class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt mr-1"></i> Dashboard</a></div>
+    <div class="breadcrumb-item active">Teachers</div>
+</div>
 
-<div class="mb-3">
-    <a href="{{ url_for('admin.create_teacher') }}" class="btn btn-primary">Create New Teacher Account</a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-chalkboard-teacher mr-2"></i>Manage Teachers</h1>
+    <a href="{{ url_for('admin.create_teacher') }}" class="btn btn-primary">
+        <i class="fas fa-plus-circle mr-1"></i> Create Teacher Account
+    </a>
 </div>
 
 <div class="card">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">Teacher Accounts</h3>
+    </div>
     <div class="card-body">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for teacher in teachers %}
-                <tr>
-                    <td>{{ teacher.id }}</td>
-                    <td>{{ teacher.first_name }} {{ teacher.last_name }}</td>
-                    <td>{{ teacher.email }}</td>
-                    <td>{{ 'Active' if teacher.is_active else 'Inactive' }}</td>
-                    <td>{{ teacher.created_at.strftime('%Y-%m-%d') }}</td>
-                    <td>
-                        {% if teacher.is_active %}
-                            <a href="{{ url_for('admin.toggle_user_status', user_id=teacher.id) }}" class="btn btn-sm btn-warning">Deactivate</a>
-                        {% else %}
-                            <a href="{{ url_for('admin.toggle_user_status', user_id=teacher.id) }}" class="btn btn-sm btn-success">Activate</a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% if teachers %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Certificate</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for teacher in teachers %}
+                            <tr>
+                                <td>{{ teacher.get_full_name() }}</td>
+                                <td>{{ teacher.email }}</td>
+                                <td>
+                                    {% if teacher.certificate_path %}
+                                        <a href="{{ url_for('static', filename=teacher.certificate_path) }}" target="_blank" class="btn btn-sm btn-info">
+                                            <i class="fas fa-file-alt mr-1"></i> View
+                                        </a>
+                                        <span class="badge badge-secondary ml-1">{{ teacher.certificate_submitted_at.strftime('%Y-%m-%d') if teacher.certificate_submitted_at else 'Unknown' }}</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">Not Submitted</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if teacher.is_active %}
+                                        <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">Inactive</span>
+                                    {% endif %}
+                                    
+                                    {% if teacher.certificate_path %}
+                                        {% if teacher.certificate_verified %}
+                                            <span class="badge badge-success">Certificate Verified</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Certificate Pending</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('admin.toggle_user_status', user_id=teacher.id) }}" 
+                                           class="btn btn-sm {% if teacher.is_active %}btn-warning{% else %}btn-success{% endif %} mr-1"
+                                           onclick="return confirm('Are you sure you want to {% if teacher.is_active %}deactivate{% else %}activate{% endif %} this teacher account?')">
+                                            {% if teacher.is_active %}
+                                                <i class="fas fa-user-slash mr-1"></i> Deactivate
+                                            {% else %}
+                                                <i class="fas fa-user-check mr-1"></i> Activate
+                                            {% endif %}
+                                        </a>
+                                        
+                                        {% if teacher.certificate_path and not teacher.certificate_verified %}
+                                            <a href="{{ url_for('admin.verify_certificate', user_id=teacher.id) }}" 
+                                               class="btn btn-sm btn-success mr-1"
+                                               onclick="return confirm('Are you sure you want to verify this teacher\'s certificate?')">
+                                                <i class="fas fa-check-circle mr-1"></i> Verify Certificate
+                                            </a>
+                                        {% endif %}
+                                        
+                                        {% if teacher.certificate_verified %}
+                                            <a href="{{ url_for('admin.unverify_certificate', user_id=teacher.id) }}" 
+                                               class="btn btn-sm btn-danger mr-1"
+                                               onclick="return confirm('Are you sure you want to revoke verification for this teacher\'s certificate?')">
+                                                <i class="fas fa-times-circle mr-1"></i> Revoke Verification
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle mr-1"></i> No teacher accounts found.
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

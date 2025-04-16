@@ -77,33 +77,16 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         try:
-            # Check for admin registration
-            if form.is_admin.data:
-                # Verify admin code - use a hardcoded secret for now
-                ADMIN_SECRET = "admin123"  # In a real app, use environment variable
-                if form.admin_code.data != ADMIN_SECRET:
-                    flash('Invalid admin registration code.', 'danger')
-                    return render_template('auth/register.html', form=form)
-                
-                admin_role = Role.query.filter_by(name='admin').first()
-                if not admin_role:
-                    logger.error("Admin role not found in database")
-                    flash('Registration failed. Please contact support.', 'danger')
-                    return render_template('auth/register.html', form=form)
-                
-                role_id = admin_role.id
-                account_type = "Admin"
-            else:
-                # Regular student registration
-                student_role = Role.query.filter_by(name='student').first()
-                
-                if not student_role:
-                    logger.error("Student role not found in database")
-                    flash('Registration failed. Please contact support.', 'danger')
-                    return render_template('auth/register.html', form=form)
-                
-                role_id = student_role.id
-                account_type = "Student"
+            # All registrations are for students only
+            student_role = Role.query.filter_by(name='student').first()
+            
+            if not student_role:
+                logger.error("Student role not found in database")
+                flash('Registration failed. Please contact support.', 'danger')
+                return render_template('auth/register.html', form=form)
+            
+            role_id = student_role.id
+            account_type = "Student"
                 
             user = User(
                 first_name=form.first_name.data,

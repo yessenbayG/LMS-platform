@@ -39,6 +39,22 @@ def upgrade_database():
     
     # Check if columns exist and add them if they don't
     try:
+        # Check if users table has certificate fields
+        cursor.execute("PRAGMA table_info(users)")
+        user_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'certificate_path' not in user_columns:
+            print("Adding certificate_path column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN certificate_path VARCHAR(255)")
+            
+        if 'certificate_verified' not in user_columns:
+            print("Adding certificate_verified column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN certificate_verified BOOLEAN DEFAULT 0")
+            
+        if 'certificate_submitted_at' not in user_columns:
+            print("Adding certificate_submitted_at column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN certificate_submitted_at TIMESTAMP")
+        
         # Check if courses table has necessary columns
         cursor.execute("PRAGMA table_info(courses)")
         columns = [column[1] for column in cursor.fetchall()]
@@ -183,8 +199,10 @@ def upgrade_database():
         ''')
         
         # Create upload directories
-        upload_dir = os.path.join('lms', 'static', 'uploads', 'course_images')
-        os.makedirs(upload_dir, exist_ok=True)
+        course_images_dir = os.path.join('lms', 'static', 'uploads', 'course_images')
+        certificates_dir = os.path.join('lms', 'static', 'uploads', 'certificates')
+        os.makedirs(course_images_dir, exist_ok=True)
+        os.makedirs(certificates_dir, exist_ok=True)
         
         # Create test messages if the messages table exists
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='messages'")

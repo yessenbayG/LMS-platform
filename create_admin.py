@@ -2,8 +2,9 @@
 
 import os
 import sys
-from getpass import getpass
+import argparse
 import logging
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ db.init_app(app)
 # Import models
 from lms.models.user import User, Role
 
-def create_admin():
+def create_admin(email, password, first_name, last_name):
     with app.app_context():
         # Create all tables
         db.create_all()
@@ -40,10 +41,6 @@ def create_admin():
             db.session.add(admin_role)
             db.session.commit()
         
-        # Create admin user
-        email = 'admin@example.com'
-        password = 'adminpass'  # In production, use getpass to prompt for password
-        
         # Check if the admin user already exists
         existing_admin = User.query.filter_by(email=email).first()
         if existing_admin:
@@ -52,17 +49,32 @@ def create_admin():
         
         # Create the admin user
         admin = User(
-            first_name='Admin',
-            last_name='User',
+            first_name=first_name,
+            last_name=last_name,
             email=email,
-            role_id=admin_role.id
+            role_id=admin_role.id,
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
         admin.password_hash = generate_password_hash(password)
         
-        db.session.add(admin)
-        db.session.commit()
-        
-        logger.info(f"Admin user created successfully: {email}")
+        try:
+            db.session.add(admin)
+            db.session.commit()
+            logger.info(f"Admin user created successfully: {email}")
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error creating admin user: {str(e)}")
+            sys.exit(1)
 
 if __name__ == "__main__":
-    create_admin()
+    parser = argparse.ArgumentParser(description='Create an admin user for the LMS.')
+    parser.add_argument('--email', required=True, help='Admin email address')
+    parser.add_argument('--password', required=True, help='Admin password')
+    parser.add_argument('--first_name', required=True, help='Admin first name')
+    parser.add_argument('--last_name', required=True, help='Admin last name')
+    
+    args = parser.parse_args()
+    
+    create_admin(args.email, args.password, args.first_name, args.last_name)
