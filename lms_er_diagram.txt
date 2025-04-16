@@ -1,0 +1,459 @@
+// Entity Relationship Diagram for LMS Project
+// drawio compatible format
+
+// Role Entity
+{
+  "id": "Role",
+  "shape": "rectangle",
+  "x": 100,
+  "y": 100,
+  "width": 160,
+  "height": 120,
+  "content": "Role\n--\nid: int PK\nname: string\ndescription: string",
+  "style": "fillColor=#dae8fc;strokeColor=#6c8ebf;"
+}
+
+// User Entity
+{
+  "id": "User",
+  "shape": "rectangle",
+  "x": 350,
+  "y": 100,
+  "width": 180,
+  "height": 200,
+  "content": "User\n--\nid: int PK\nfirst_name: string\nlast_name: string\nemail: string\npassword_hash: string\nrole_id: int FK\nis_active: boolean\ncreated_at: datetime\nupdated_at: datetime",
+  "style": "fillColor=#dae8fc;strokeColor=#6c8ebf;"
+}
+
+// Category Entity
+{
+  "id": "Category",
+  "shape": "rectangle",
+  "x": 350,
+  "y": 350,
+  "width": 160,
+  "height": 120,
+  "content": "Category\n--\nid: int PK\nname: string\ndescription: string",
+  "style": "fillColor=#d5e8d4;strokeColor=#82b366;"
+}
+
+// Course Entity
+{
+  "id": "Course",
+  "shape": "rectangle",
+  "x": 600,
+  "y": 350,
+  "width": 180,
+  "height": 200,
+  "content": "Course\n--\nid: int PK\ntitle: string\ndescription: string\ncategory_id: int FK\nteacher_id: int FK\nimage_path: string\nis_active: boolean\nis_approved: boolean\ncreated_at: datetime",
+  "style": "fillColor=#d5e8d4;strokeColor=#82b366;"
+}
+
+// Module Entity
+{
+  "id": "Module",
+  "shape": "rectangle",
+  "x": 600,
+  "y": 600,
+  "width": 160,
+  "height": 160,
+  "content": "Module\n--\nid: int PK\ntitle: string\ndescription: string\norder: int\ncourse_id: int FK\ncreated_at: datetime",
+  "style": "fillColor=#d5e8d4;strokeColor=#82b366;"
+}
+
+// Material Entity
+{
+  "id": "Material",
+  "shape": "rectangle",
+  "x": 350,
+  "y": 600,
+  "width": 180,
+  "height": 180,
+  "content": "Material\n--\nid: int PK\ntitle: string\ncontent_type: string\ncontent: string\nfile_path: string\ncourse_id: int FK\nmodule_id: int FK\norder: int\ncreated_at: datetime",
+  "style": "fillColor=#d5e8d4;strokeColor=#82b366;"
+}
+
+// ModuleProgress Entity
+{
+  "id": "ModuleProgress",
+  "shape": "rectangle",
+  "x": 850,
+  "y": 600,
+  "width": 160,
+  "height": 120,
+  "content": "ModuleProgress\n--\nid: int PK\nstudent_id: int FK\nmodule_id: int FK\ncompleted: boolean\ncompleted_at: datetime",
+  "style": "fillColor=#ffe6cc;strokeColor=#d79b00;"
+}
+
+// Message Entity
+{
+  "id": "Message",
+  "shape": "rectangle",
+  "x": 100,
+  "y": 350,
+  "width": 160,
+  "height": 160,
+  "content": "Message\n--\nid: int PK\nsender_id: int FK\nrecipient_id: int FK\ncontent: string\nread: boolean\ncreated_at: datetime",
+  "style": "fillColor=#dae8fc;strokeColor=#6c8ebf;"
+}
+
+// Enrollment Entity
+{
+  "id": "Enrollment",
+  "shape": "rectangle",
+  "x": 850,
+  "y": 350,
+  "width": 160,
+  "height": 140,
+  "content": "Enrollment\n--\nid: int PK\nstudent_id: int FK\ncourse_id: int FK\nenrolled_at: datetime\noverall_grade: float",
+  "style": "fillColor=#ffe6cc;strokeColor=#d79b00;"
+}
+
+// Test Entity
+{
+  "id": "Test",
+  "shape": "rectangle",
+  "x": 600,
+  "y": 800,
+  "width": 160,
+  "height": 160,
+  "content": "Test\n--\nid: int PK\ntitle: string\ndescription: string\npassing_score: float\nmodule_id: int FK\ncreated_at: datetime",
+  "style": "fillColor=#fff2cc;strokeColor=#d6b656;"
+}
+
+// Question Entity
+{
+  "id": "Question",
+  "shape": "rectangle",
+  "x": 600,
+  "y": 1000,
+  "width": 160,
+  "height": 140,
+  "content": "Question\n--\nid: int PK\nquestion_text: string\nquestion_type: string\npoints: float\ntest_id: int FK",
+  "style": "fillColor=#fff2cc;strokeColor=#d6b656;"
+}
+
+// QuestionOption Entity
+{
+  "id": "QuestionOption",
+  "shape": "rectangle",
+  "x": 350,
+  "y": 1000,
+  "width": 160,
+  "height": 120,
+  "content": "QuestionOption\n--\nid: int PK\noption_text: string\nis_correct: boolean\nquestion_id: int FK",
+  "style": "fillColor=#fff2cc;strokeColor=#d6b656;"
+}
+
+// TestAttempt Entity
+{
+  "id": "TestAttempt",
+  "shape": "rectangle",
+  "x": 850,
+  "y": 800,
+  "width": 180,
+  "height": 160,
+  "content": "TestAttempt\n--\nid: int PK\nstudent_id: int FK\ntest_id: int FK\nscore: float\npassed: boolean\nstarted_at: datetime\ncompleted_at: datetime",
+  "style": "fillColor=#fff2cc;strokeColor=#d6b656;"
+}
+
+// TestAnswer Entity
+{
+  "id": "TestAnswer",
+  "shape": "rectangle",
+  "x": 850,
+  "y": 1000,
+  "width": 180,
+  "height": 160,
+  "content": "TestAnswer\n--\nid: int PK\nattempt_id: int FK\nquestion_id: int FK\nanswer_text: string\nselected_options: string\npoints_earned: float",
+  "style": "fillColor=#fff2cc;strokeColor=#d6b656;"
+}
+
+// Assignment Entity
+{
+  "id": "Assignment",
+  "shape": "rectangle",
+  "x": 100,
+  "y": 600,
+  "width": 160,
+  "height": 140,
+  "content": "Assignment\n--\nid: int PK\ntitle: string\ndescription: string\ncourse_id: int FK\ncreated_at: datetime",
+  "style": "fillColor=#e1d5e7;strokeColor=#9673a6;"
+}
+
+// Submission Entity
+{
+  "id": "Submission",
+  "shape": "rectangle",
+  "x": 100,
+  "y": 800,
+  "width": 180,
+  "height": 200,
+  "content": "Submission\n--\nid: int PK\ncontent: string\nfile_path: string\nstudent_id: int FK\nassignment_id: int FK\ngrade: float\nfeedback: string\nsubmitted_at: datetime\ngraded_at: datetime",
+  "style": "fillColor=#e1d5e7;strokeColor=#9673a6;"
+}
+
+// Relationships
+// Role to User (one-to-many)
+{
+  "id": "Role_User",
+  "shape": "connector",
+  "source": "Role",
+  "target": "User",
+  "sourceConnector": "east",
+  "targetConnector": "west",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// User to Message as sender (one-to-many)
+{
+  "id": "User_Message_Sender",
+  "shape": "connector",
+  "source": "User",
+  "target": "Message",
+  "sourceConnector": "west",
+  "targetConnector": "north",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// User to Message as recipient (one-to-many)
+{
+  "id": "User_Message_Recipient",
+  "shape": "connector",
+  "source": "User",
+  "target": "Message",
+  "sourceConnector": "southwest",
+  "targetConnector": "northeast",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;dashed=1;"
+}
+
+// Category to Course (one-to-many)
+{
+  "id": "Category_Course",
+  "shape": "connector",
+  "source": "Category",
+  "target": "Course",
+  "sourceConnector": "east",
+  "targetConnector": "west",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// User to Course as teacher (one-to-many)
+{
+  "id": "User_Course",
+  "shape": "connector",
+  "source": "User",
+  "target": "Course",
+  "sourceConnector": "southeast",
+  "targetConnector": "northwest",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// Course to Module (one-to-many)
+{
+  "id": "Course_Module",
+  "shape": "connector",
+  "source": "Course",
+  "target": "Module",
+  "sourceConnector": "south",
+  "targetConnector": "north",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// Module to Material (one-to-many)
+{
+  "id": "Module_Material",
+  "shape": "connector",
+  "source": "Module",
+  "target": "Material",
+  "sourceConnector": "west",
+  "targetConnector": "east",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// Course to Material (one-to-many)
+{
+  "id": "Course_Material",
+  "shape": "connector",
+  "source": "Course",
+  "target": "Material",
+  "sourceConnector": "southwest",
+  "targetConnector": "northeast",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;dashed=1;"
+}
+
+// User to ModuleProgress (one-to-many)
+{
+  "id": "User_ModuleProgress",
+  "shape": "connector",
+  "source": "User",
+  "target": "ModuleProgress",
+  "sourceConnector": "east",
+  "targetConnector": "northwest",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;jumpStyle=arc;jumpSize=10;"
+}
+
+// Module to ModuleProgress (one-to-many)
+{
+  "id": "Module_ModuleProgress",
+  "shape": "connector",
+  "source": "Module",
+  "target": "ModuleProgress",
+  "sourceConnector": "east",
+  "targetConnector": "west",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// Course to Enrollment (one-to-many)
+{
+  "id": "Course_Enrollment",
+  "shape": "connector",
+  "source": "Course",
+  "target": "Enrollment",
+  "sourceConnector": "east",
+  "targetConnector": "west",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// User to Enrollment (one-to-many)
+{
+  "id": "User_Enrollment",
+  "shape": "connector",
+  "source": "User",
+  "target": "Enrollment",
+  "sourceConnector": "northeast",
+  "targetConnector": "northwest",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;jumpStyle=arc;jumpSize=10;"
+}
+
+// Module to Test (one-to-many)
+{
+  "id": "Module_Test",
+  "shape": "connector",
+  "source": "Module",
+  "target": "Test",
+  "sourceConnector": "south",
+  "targetConnector": "north",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// Test to Question (one-to-many)
+{
+  "id": "Test_Question",
+  "shape": "connector",
+  "source": "Test",
+  "target": "Question",
+  "sourceConnector": "south",
+  "targetConnector": "north",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// Question to QuestionOption (one-to-many)
+{
+  "id": "Question_QuestionOption",
+  "shape": "connector",
+  "source": "Question",
+  "target": "QuestionOption",
+  "sourceConnector": "west",
+  "targetConnector": "east",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// Test to TestAttempt (one-to-many)
+{
+  "id": "Test_TestAttempt",
+  "shape": "connector",
+  "source": "Test",
+  "target": "TestAttempt",
+  "sourceConnector": "east",
+  "targetConnector": "west",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// User to TestAttempt (one-to-many)
+{
+  "id": "User_TestAttempt",
+  "shape": "connector",
+  "source": "User",
+  "target": "TestAttempt",
+  "sourceConnector": "east",
+  "targetConnector": "north",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;jumpStyle=arc;jumpSize=10;"
+}
+
+// TestAttempt to TestAnswer (one-to-many)
+{
+  "id": "TestAttempt_TestAnswer",
+  "shape": "connector",
+  "source": "TestAttempt",
+  "target": "TestAnswer",
+  "sourceConnector": "south",
+  "targetConnector": "north",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// Question to TestAnswer (one-to-many)
+{
+  "id": "Question_TestAnswer",
+  "shape": "connector",
+  "source": "Question",
+  "target": "TestAnswer",
+  "sourceConnector": "east",
+  "targetConnector": "west",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;jumpStyle=arc;jumpSize=10;"
+}
+
+// Course to Assignment (one-to-many)
+{
+  "id": "Course_Assignment",
+  "shape": "connector",
+  "source": "Course",
+  "target": "Assignment",
+  "sourceConnector": "west",
+  "targetConnector": "northeast",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;jumpStyle=arc;jumpSize=10;"
+}
+
+// Assignment to Submission (one-to-many)
+{
+  "id": "Assignment_Submission",
+  "shape": "connector",
+  "source": "Assignment",
+  "target": "Submission",
+  "sourceConnector": "south",
+  "targetConnector": "north",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;"
+}
+
+// User to Submission (one-to-many)
+{
+  "id": "User_Submission",
+  "shape": "connector",
+  "source": "User",
+  "target": "Submission",
+  "sourceConnector": "southwest",
+  "targetConnector": "northwest",
+  "content": "1:n",
+  "style": "endArrow=classic;startArrow=none;endFill=1;startFill=0;jumpStyle=arc;jumpSize=10;"
+}

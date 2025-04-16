@@ -35,8 +35,8 @@ def init_db():
         return
         
     # Create admin user if it doesn't exist
-    admin_email = os.getenv('ADMIN_EMAIL', 'admin@example.com')
-    admin_password = os.getenv('ADMIN_PASSWORD', 'adminpassword')
+    admin_email = os.getenv('ADMIN_EMAIL', 'admin@gmail.com')
+    admin_password = os.getenv('ADMIN_PASSWORD', 'qweasdqwe123')
     
     existing_admin = User.query.filter_by(email=admin_email).first()
     if not existing_admin:
@@ -58,8 +58,8 @@ def init_db():
         teacher = User(
             first_name='Demo',
             last_name='Teacher',
-            email='teacher@example.com',
-            password='teacherpass', # Using password setter method
+            email='teacher@gmail.com',
+            password='qweasdqwe123', # Using password setter method
             role_id=teacher_role.id
         )
         db.session.add(teacher)
@@ -69,8 +69,8 @@ def init_db():
         student = User(
             first_name='Demo',
             last_name='Student',
-            email='student@example.com',
-            password='studentpass', # Using password setter method
+            email='student@gmail.com',
+            password='qweasdqwe123', # Using password setter method
             role_id=student_role.id
         )
         db.session.add(student)

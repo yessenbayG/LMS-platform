@@ -5,11 +5,11 @@ import os
 from werkzeug.security import generate_password_hash
 
 # Admin credentials
-admin_email = 'admin@example.com'
-admin_password = 'adminpassword'
+admin_email = 'admin@gmail.com'
+admin_password = 'qweasdqwe123'
 
 # Database path
-db_path = 'lms.db'
+db_path = 'instance/lms.db'
 
 def create_admin():
     """Add a known good admin account to the database"""
