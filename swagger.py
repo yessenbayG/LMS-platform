@@ -2,6 +2,7 @@ from flask import Blueprint
 from flask_restx import Api, Resource, fields
 from lms.models.user import User
 from lms.models.course import Course, Module, Material, Assignment, Enrollment, Test, Question
+from lms.models.message import Message
 
 # Create blueprint for Swagger/API docs
 swagger_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -30,6 +31,7 @@ ns_modules = api.namespace('modules', description='Module operations')
 ns_materials = api.namespace('materials', description='Material operations')
 ns_assignments = api.namespace('assignments', description='Assignment operations')
 ns_tests = api.namespace('tests', description='Test operations')
+ns_messages = api.namespace('messages', description='Messaging operations')
 
 # Define models for request/response serialization
 user_model = api.model('User', {
@@ -118,6 +120,22 @@ question_model = api.model('Question', {
     'question_type': fields.String(required=True, description='Question type (multiple_choice, true_false, essay)'),
     'points': fields.Float(required=True, description='Points value'),
     'test_id': fields.Integer(required=True, description='Test ID')
+})
+
+message_model = api.model('Message', {
+    'id': fields.Integer(readonly=True, description='Message unique identifier'),
+    'sender_id': fields.Integer(required=True, description='Sender user ID'),
+    'recipient_id': fields.Integer(required=True, description='Recipient user ID'),
+    'content': fields.String(required=True, description='Message content'),
+    'read': fields.Boolean(description='Whether the message has been read'),
+    'created_at': fields.DateTime(description='Message timestamp')
+})
+
+conversation_model = api.model('Conversation', {
+    'contact_id': fields.Integer(description='Contact user ID'),
+    'contact_name': fields.String(description='Contact name'),
+    'latest_message': fields.Nested(message_model),
+    'unread_count': fields.Integer(description='Number of unread messages')
 })
 
 # API Routes
@@ -290,3 +308,33 @@ class TestAttempts(Resource):
     def post(self, id):
         """Start a new test attempt"""
         return {'message': f'This endpoint would start a new attempt for test with ID {id}'}
+
+@ns_messages.route('/')
+class MessageInbox(Resource):
+    @api.doc('get_conversations')
+    @api.marshal_list_with(conversation_model)
+    def get(self):
+        """Get all conversations for the current user"""
+        return {'message': 'This endpoint would return all conversations'}
+
+@ns_messages.route('/<int:user_id>')
+class MessageConversation(Resource):
+    @api.doc('get_conversation')
+    @api.marshal_list_with(message_model)
+    def get(self, user_id):
+        """Get conversation with a specific user"""
+        return {'message': f'This endpoint would return conversation with user {user_id}'}
+    
+    @api.doc('send_message')
+    @api.expect(message_model)
+    @api.marshal_with(message_model, code=201)
+    def post(self, user_id):
+        """Send a message to another user"""
+        return {'message': f'This endpoint would send a message to user {user_id}'}, 201
+
+@ns_messages.route('/unread/count')
+class UnreadMessageCount(Resource):
+    @api.doc('unread_count')
+    def get(self):
+        """Get the count of unread messages"""
+        return {'count': 0}
