@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}My Wishlist - LMS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>My Wishlist</h1>
+    
+    {% if courses %}
+        <div class="row mt-4">
+            {% for course in courses %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        {% if course.image_path %}
+                            <img src="{{ url_for('static', filename=course.image_path) }}" class="card-img-top" alt="{{ course.title }}" style="height: 180px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light text-center py-5" style="height: 180px;">
+                                <i class="fas fa-book fa-3x text-secondary"></i>
+                                <p class="mt-2 text-muted">No image</p>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ course.title }}</h5>
+                            <p class="card-text text-muted">{{ course.description|truncate(100) }}</p>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Instructor: {{ course.teacher.get_full_name() }}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('student.view_course', course_id=course.id) }}" class="btn btn-outline-primary btn-sm">View Course</a>
+                                <a href="{{ url_for('student.remove_from_wishlist', course_id=course.id) }}" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-heart-broken"></i> Remove
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-4">
+            <p class="mb-0">Your wishlist is empty. <a href="{{ url_for('student.browse_courses') }}">Browse courses</a> to add some to your wishlist!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

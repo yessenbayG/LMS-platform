@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Apply to Become an Instructor - LMS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 mb-0">Apply to Become an Instructor</h1>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5>Requirements to become an instructor:</h5>
+                        <ul>
+                            <li>You must have relevant teaching experience or educational qualifications</li>
+                            <li>Your certificate or diploma must be verifiable</li>
+                            <li>Applications are reviewed by administrators</li>
+                        </ul>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.csrf_token }}
+                        
+                        <div class="form-group mb-3">
+                            {{ form.certificate.label }}
+                            {{ form.certificate(class="form-control") }}
+                            <small class="text-muted">Accepted formats: PDF, JPG, JPEG, PNG</small>
+                            {% if form.certificate.errors %}
+                                {% for error in form.certificate.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            {{ form.description.label }}
+                            {{ form.description(class="form-control", rows=5) }}
+                            <small class="text-muted">Briefly describe your qualification, teaching experience, and the subjects you would like to teach</small>
+                            {% if form.description.errors %}
+                                {% for error in form.description.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group text-center mt-4">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary ml-2">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
