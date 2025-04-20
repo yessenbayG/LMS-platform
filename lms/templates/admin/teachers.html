@@ -15,6 +15,91 @@
     </a>
 </div>
 
+{% if teacher_applicants %}
+<div class="card mb-4">
+    <div class="card-header bg-warning text-white">
+        <h3 class="mb-0">Teacher Applications Pending ({{ teacher_applicants|length }})</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Certificate</th>
+                        <th>Submitted On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for applicant in teacher_applicants %}
+                        <tr>
+                            <td>{{ applicant.get_full_name() }}</td>
+                            <td>{{ applicant.email }}</td>
+                            <td>
+                                {% if applicant.certificate_path %}
+                                    <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#certModal{{ applicant.id }}">
+                                        <i class="fas fa-file-alt"></i> View Certificate
+                                    </button>
+                                    
+                                    <!-- Certificate Modal -->
+                                    <div class="modal fade" id="certModal{{ applicant.id }}" tabindex="-1" role="dialog" aria-labelledby="certModalLabel{{ applicant.id }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="certModalLabel{{ applicant.id }}">Teacher Certificate - {{ applicant.get_full_name() }}</h5>
+                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <div class="modal-body text-center">
+                                                    {% if applicant.certificate_path.endswith('.pdf') %}
+                                                        <div class="embed-responsive embed-responsive-1by1 mb-3">
+                                                            <iframe class="embed-responsive-item" src="{{ url_for('static', filename=applicant.certificate_path) }}"></iframe>
+                                                        </div>
+                                                        <a href="{{ url_for('static', filename=applicant.certificate_path) }}" target="_blank" class="btn btn-primary">
+                                                            <i class="fas fa-external-link-alt mr-1"></i> Open in New Tab
+                                                        </a>
+                                                    {% else %}
+                                                        <img src="{{ url_for('static', filename=applicant.certificate_path) }}" class="img-fluid" alt="Teacher Certificate">
+                                                    {% endif %}
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="badge bg-danger">No Certificate</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ applicant.certificate_submitted_at.strftime('%Y-%m-%d') if applicant.certificate_submitted_at else 'Unknown' }}</td>
+                            <td>
+                                <form action="{{ url_for('admin.approve_student_application', user_id=applicant.id) }}" method="post" class="d-inline">
+                                    {{ csrf_token }}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('This will promote the student to teacher. Continue?')">
+                                        <i class="fas fa-check-circle mr-1"></i> Approve
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('admin.reject_student_application', user_id=applicant.id) }}" method="post" class="d-inline ml-1">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('This will reject the application. Continue?')">
+                                        <i class="fas fa-times-circle mr-1"></i> Reject
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="card">
     <div class="card-header bg-primary text-white">
         <h3 class="mb-0">Teacher Accounts</h3>
@@ -39,33 +124,83 @@
                                 <td>{{ teacher.email }}</td>
                                 <td>
                                     {% if teacher.certificate_path %}
-                                        <a href="{{ url_for('static', filename=teacher.certificate_path) }}" target="_blank" class="btn btn-sm btn-info">
-                                            <i class="fas fa-file-alt mr-1"></i> View
-                                        </a>
-                                        <span class="badge badge-secondary ml-1">{{ teacher.certificate_submitted_at.strftime('%Y-%m-%d') if teacher.certificate_submitted_at else 'Unknown' }}</span>
+                                        <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#teacherCertModal{{ teacher.id }}">
+                                            <i class="fas fa-file-alt"></i> View
+                                        </button>
+                                        <span class="badge bg-secondary ms-1">{{ teacher.certificate_submitted_at.strftime('%Y-%m-%d') if teacher.certificate_submitted_at else 'Unknown' }}</span>
+                                        
+                                        <!-- Certificate Modal -->
+                                        <div class="modal fade" id="teacherCertModal{{ teacher.id }}" tabindex="-1" role="dialog" aria-labelledby="teacherCertModalLabel{{ teacher.id }}" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="teacherCertModalLabel{{ teacher.id }}">Teacher Certificate - {{ teacher.get_full_name() }}</h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body text-center">
+                                                        {% if teacher.certificate_path.endswith('.pdf') %}
+                                                            <div class="embed-responsive embed-responsive-1by1 mb-3">
+                                                                <iframe class="embed-responsive-item" src="{{ url_for('static', filename=teacher.certificate_path) }}"></iframe>
+                                                            </div>
+                                                            <a href="{{ url_for('static', filename=teacher.certificate_path) }}" target="_blank" class="btn btn-primary">
+                                                                <i class="fas fa-external-link-alt mr-1"></i> Open in New Tab
+                                                            </a>
+                                                        {% else %}
+                                                            <img src="{{ url_for('static', filename=teacher.certificate_path) }}" class="img-fluid" alt="Teacher Certificate">
+                                                        {% endif %}
+                                                        
+                                                        <p class="mt-3">Certificate Status: 
+                                                            {% if teacher.certificate_verified %}
+                                                                <span class="badge bg-success">Verified</span>
+                                                            {% else %}
+                                                                <span class="badge bg-warning">Pending Verification</span>
+                                                            {% endif %}
+                                                        </p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        {% if not teacher.certificate_verified %}
+                                                            <a href="{{ url_for('admin.verify_certificate', user_id=teacher.id) }}" 
+                                                               class="btn btn-success"
+                                                               onclick="return confirm('Are you sure you want to verify this teacher\'s certificate?')">
+                                                                <i class="fas fa-check-circle mr-1"></i> Verify Certificate
+                                                            </a>
+                                                        {% else %}
+                                                            <a href="{{ url_for('admin.unverify_certificate', user_id=teacher.id) }}" 
+                                                               class="btn btn-danger"
+                                                               onclick="return confirm('Are you sure you want to revoke verification for this teacher\'s certificate?')">
+                                                                <i class="fas fa-times-circle mr-1"></i> Revoke Verification
+                                                            </a>
+                                                        {% endif %}
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     {% else %}
-                                        <span class="badge badge-danger">Not Submitted</span>
+                                        <span class="badge bg-danger">Not Submitted</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if teacher.is_active %}
-                                        <span class="badge badge-success">Active</span>
+                                        <span class="badge bg-success">Active</span>
                                     {% else %}
-                                        <span class="badge badge-danger">Inactive</span>
+                                        <span class="badge bg-danger">Inactive</span>
                                     {% endif %}
                                     
                                     {% if teacher.certificate_path %}
                                         {% if teacher.certificate_verified %}
-                                            <span class="badge badge-success">Certificate Verified</span>
+                                            <span class="badge bg-success">Certificate Verified</span>
                                         {% else %}
-                                            <span class="badge badge-warning">Certificate Pending</span>
+                                            <span class="badge bg-warning">Certificate Pending</span>
                                         {% endif %}
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="btn-group">
+                                    <div class="d-flex flex-column">
                                         <a href="{{ url_for('admin.toggle_user_status', user_id=teacher.id) }}" 
-                                           class="btn btn-sm {% if teacher.is_active %}btn-warning{% else %}btn-success{% endif %} mr-1"
+                                           class="btn btn-sm {% if teacher.is_active %}btn-warning{% else %}btn-success{% endif %} mb-1"
                                            onclick="return confirm('Are you sure you want to {% if teacher.is_active %}deactivate{% else %}activate{% endif %} this teacher account?')">
                                             {% if teacher.is_active %}
                                                 <i class="fas fa-user-slash mr-1"></i> Deactivate
@@ -76,7 +211,7 @@
                                         
                                         {% if teacher.certificate_path and not teacher.certificate_verified %}
                                             <a href="{{ url_for('admin.verify_certificate', user_id=teacher.id) }}" 
-                                               class="btn btn-sm btn-success mr-1"
+                                               class="btn btn-sm btn-success mb-1"
                                                onclick="return confirm('Are you sure you want to verify this teacher\'s certificate?')">
                                                 <i class="fas fa-check-circle mr-1"></i> Verify Certificate
                                             </a>
@@ -84,7 +219,7 @@
                                         
                                         {% if teacher.certificate_verified %}
                                             <a href="{{ url_for('admin.unverify_certificate', user_id=teacher.id) }}" 
-                                               class="btn btn-sm btn-danger mr-1"
+                                               class="btn btn-sm btn-danger"
                                                onclick="return confirm('Are you sure you want to revoke verification for this teacher\'s certificate?')">
                                                 <i class="fas fa-times-circle mr-1"></i> Revoke Verification
                                             </a>

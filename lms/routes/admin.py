@@ -33,11 +33,27 @@ def dashboard():
     total_courses = Course.query.count()
     total_enrollments = Enrollment.query.count()
     
+    # Get payment stats
+    pending_teacher_payments = Course.query.filter(
+        Course.payment_receipt_path != None,
+        Course.payment_verified == False
+    ).count()
+    
+    pending_student_payments = Enrollment.query.filter(
+        Enrollment.payment_receipt_path != None,
+        Enrollment.payment_verified == False
+    ).count()
+    
+    total_pending_payments = pending_teacher_payments + pending_student_payments
+    
     stats = {
         'students': total_students,
         'teachers': total_teachers,
         'courses': total_courses,
-        'enrollments': total_enrollments
+        'enrollments': total_enrollments,
+        'pending_payments': total_pending_payments,
+        'pending_teacher_payments': pending_teacher_payments,
+        'pending_student_payments': pending_student_payments
     }
     
     return render_template('admin/dashboard.html', stats=stats)
@@ -46,8 +62,17 @@ def dashboard():
 @login_required
 @admin_required
 def manage_teachers():
+    # Get all teachers
     teachers = User.query.join(Role).filter(Role.name == 'teacher').all()
-    return render_template('admin/teachers.html', teachers=teachers)
+    
+    # Get students who have applied to become teachers (have certificate pending verification)
+    teacher_applicants = User.query.join(Role).filter(
+        Role.name == 'student',
+        User.certificate_path != None,
+        User.certificate_verified == False
+    ).all()
+    
+    return render_template('admin/teachers.html', teachers=teachers, teacher_applicants=teacher_applicants)
 
 @admin_bp.route('/teachers/create', methods=['GET', 'POST'])
 @login_required
@@ -145,9 +170,17 @@ def toggle_user_status(user_id):
 def manage_courses():
     pending_courses = Course.query.filter_by(is_approved=False).all()
     approved_courses = Course.query.filter_by(is_approved=True).all()
+    
+    # Also get courses with pending payments
+    payment_pending_courses = Course.query.filter(
+        Course.payment_receipt_path != None,
+        Course.payment_verified == False
+    ).all()
+    
     return render_template('admin/courses.html', 
                           pending_courses=pending_courses,
-                          approved_courses=approved_courses)
+                          approved_courses=approved_courses,
+                          payment_pending_courses=payment_pending_courses)
 
 @admin_bp.route('/courses/edit/<int:course_id>', methods=['GET', 'POST'])
 @login_required
@@ -236,7 +269,7 @@ def edit_module(module_id):
                           module=module, 
                           course=course)
 
-@admin_bp.route('/courses/delete/<int:course_id>')
+@admin_bp.route('/courses/delete/<int:course_id>', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def delete_course(course_id):
@@ -254,6 +287,11 @@ def delete_course(course_id):
 @admin_required
 def approve_course(course_id):
     course = Course.query.get_or_404(course_id)
+    
+    # Check if there's a payment receipt but it hasn't been verified
+    if course.payment_receipt_path and not course.payment_verified:
+        flash(f'Please verify the payment receipt for "{course.title}" before approving the course.', 'warning')
+        return redirect(url_for('admin.manage_courses'))
     
     # Approve the course
     course.is_approved = True
@@ -297,3 +335,154 @@ def unverify_certificate(user_id):
     
     flash(f'Certificate verification for {teacher.get_full_name()} has been revoked.', 'success')
     return redirect(url_for('admin.manage_teachers'))
+
+@admin_bp.route('/students/approve-application/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def approve_student_application(user_id):
+    student = User.query.get_or_404(user_id)
+    
+    # Check if the user is a student with a certificate
+    if not student.is_student() or not student.certificate_path:
+        flash('Invalid student application.', 'danger')
+        return redirect(url_for('admin.manage_teachers'))
+    
+    # Get teacher role
+    teacher_role = Role.query.filter_by(name='teacher').first()
+    if not teacher_role:
+        flash('Teacher role not found in the system.', 'danger')
+        return redirect(url_for('admin.manage_teachers'))
+    
+    # Convert student to teacher
+    student.role_id = teacher_role.id
+    student.certificate_verified = True
+    db.session.commit()
+    
+    flash(f'{student.get_full_name()} has been approved as a teacher!', 'success')
+    return redirect(url_for('admin.manage_teachers'))
+
+@admin_bp.route('/students/reject-application/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def reject_student_application(user_id):
+    student = User.query.get_or_404(user_id)
+    
+    # Check if the user is a student with a certificate
+    if not student.is_student() or not student.certificate_path:
+        flash('Invalid student application.', 'danger')
+        return redirect(url_for('admin.manage_teachers'))
+    
+    # Reject application (mark as not verified, but keep the certificate record)
+    student.certificate_verified = False
+    db.session.commit()
+    
+    flash(f'Teacher application from {student.get_full_name()} has been rejected.', 'info')
+    return redirect(url_for('admin.manage_teachers'))
+
+@admin_bp.route('/debug/create-subscription-plans')
+# Debug purposes only - no auth required
+def debug_create_subscription_plans():
+    """Debug route to create subscription plans"""
+    try:
+        from lms.models.course import TeacherSubscriptionPlan
+        
+        # Clear existing plans
+        TeacherSubscriptionPlan.query.delete()
+        
+        # Create subscription plans
+        plans = [
+            TeacherSubscriptionPlan(name="Standard - Up to 10 students", max_students=10, price_per_month=20000, description="Basic plan for small classes"),
+            TeacherSubscriptionPlan(name="Pro - Up to 30 students", max_students=30, price_per_month=35000, description="Professional plan for medium classes"),
+            TeacherSubscriptionPlan(name="Premium - Up to 100 students", max_students=100, price_per_month=70000, description="Premium plan for large classes"),
+            TeacherSubscriptionPlan(name="Enterprise - Unlimited students", max_students=10000, price_per_month=100000, description="Enterprise plan for unlimited students")
+        ]
+        
+        for plan in plans:
+            db.session.add(plan)
+        
+        db.session.commit()
+        
+        # Get all subscription plans to verify
+        all_plans = TeacherSubscriptionPlan.query.all()
+        plan_info = "\n".join([f"ID: {p.id}, Name: {p.name}, Max Students: {p.max_students}, Price: {p.price_per_month} KZT" for p in all_plans])
+        
+        return f"Successfully created {len(plans)} subscription plans:<br><pre>{plan_info}</pre>"
+    except Exception as e:
+        db.session.rollback()
+        return f"Error creating subscription plans: {str(e)}"
+
+@admin_bp.route('/payments')
+@login_required
+@admin_required
+def manage_payments():
+    # Get courses with unverified teacher payments
+    teacher_payments = Course.query.filter(
+        Course.payment_receipt_path != None,
+        Course.payment_verified == False
+    ).all()
+    
+    # Get enrollment payments that need verification
+    student_payments = Enrollment.query.filter(
+        Enrollment.payment_receipt_path != None,
+        Enrollment.payment_verified == False
+    ).all()
+    
+    return render_template('admin/payments.html',
+                          teacher_payments=teacher_payments,
+                          student_payments=student_payments)
+
+@admin_bp.route('/payments/verify-teacher/<int:course_id>', methods=['POST'])
+@login_required
+@admin_required
+def verify_teacher_payment(course_id):
+    course = Course.query.get_or_404(course_id)
+    
+    # Verify teacher's payment for this course
+    course.payment_verified = True
+    db.session.commit()
+    
+    flash(f'Payment for course "{course.title}" by {course.teacher.get_full_name()} has been verified.', 'success')
+    return redirect(url_for('admin.manage_payments'))
+
+@admin_bp.route('/payments/reject-teacher/<int:course_id>', methods=['POST'])
+@login_required
+@admin_required
+def reject_teacher_payment(course_id):
+    course = Course.query.get_or_404(course_id)
+    
+    # Reject teacher's payment (keep records for reference)
+    course.payment_verified = False
+    db.session.commit()
+    
+    flash(f'Payment for course "{course.title}" by {course.teacher.get_full_name()} has been rejected.', 'warning')
+    return redirect(url_for('admin.manage_payments'))
+
+@admin_bp.route('/payments/verify-student/<int:enrollment_id>', methods=['POST'])
+@login_required
+@admin_required
+def verify_student_payment(enrollment_id):
+    enrollment = Enrollment.query.get_or_404(enrollment_id)
+    student = enrollment.student
+    course = enrollment.course
+    
+    # Verify student's payment for this enrollment
+    enrollment.payment_verified = True
+    db.session.commit()
+    
+    flash(f'Payment by {student.get_full_name()} for course "{course.title}" has been verified.', 'success')
+    return redirect(url_for('admin.manage_payments'))
+
+@admin_bp.route('/payments/reject-student/<int:enrollment_id>', methods=['POST'])
+@login_required
+@admin_required
+def reject_student_payment(enrollment_id):
+    enrollment = Enrollment.query.get_or_404(enrollment_id)
+    student = enrollment.student
+    course = enrollment.course
+    
+    # Reject student's payment (keep records for reference)
+    enrollment.payment_verified = False
+    db.session.commit()
+    
+    flash(f'Payment by {student.get_full_name()} for course "{course.title}" has been rejected.', 'warning')
+    return redirect(url_for('admin.manage_payments'))

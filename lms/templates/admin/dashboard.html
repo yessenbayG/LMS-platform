@@ -33,6 +33,17 @@
         <div class="stat-label">Enrollments</div>
         <div class="stat-value">{{ stats.enrollments }}</div>
     </div>
+    
+    <div class="stat-card {% if stats.pending_payments > 0 %}bg-warning text-dark{% endif %}">
+        <i class="fas fa-money-check-alt mb-2" style="font-size: 2rem; color: {% if stats.pending_payments > 0 %}#856404{% else %}var(--primary){% endif %};"></i>
+        <div class="stat-label">Pending Payments</div>
+        <div class="stat-value">{{ stats.pending_payments }}</div>
+        {% if stats.pending_payments > 0 %}
+        <div class="stat-details">
+            <small>{{ stats.pending_teacher_payments }} teacher(s), {{ stats.pending_student_payments }} student(s)</small>
+        </div>
+        {% endif %}
+    </div>
 </div>
 
 <div class="card">
@@ -47,8 +58,11 @@
             <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary mb-2 mr-2">
                 <i class="fas fa-users mr-1"></i> Manage Users
             </a>
-            <a href="{{ url_for('admin.manage_courses') }}" class="btn btn-secondary mb-2">
+            <a href="{{ url_for('admin.manage_courses') }}" class="btn btn-secondary mb-2 mr-2">
                 <i class="fas fa-book mr-1"></i> Manage Courses
+            </a>
+            <a href="{{ url_for('admin.manage_payments') }}" class="btn btn-success mb-2">
+                <i class="fas fa-money-check-alt mr-1"></i> Verify Payments
             </a>
         </div>
     </div>

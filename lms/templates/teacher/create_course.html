@@ -52,8 +52,45 @@
                 <small class="text-muted">Upload an image for your course (optional). Recommended size: 1200x600px.</small>
             </div>
             
+            <hr>
+            <h4>Course Pricing & Subscription</h4>
+            
+            <div class="form-group">
+                {{ form.enrollment_price.label }}
+                {{ form.enrollment_price(class="form-control") }}
+                {% if form.enrollment_price.errors %}
+                    {% for error in form.enrollment_price.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+                <small class="text-muted">Enter the price students will pay to enroll in this course (in KZT).</small>
+            </div>
+            
+            <div class="form-group">
+                {{ form.subscription_plan.label }}
+                {{ form.subscription_plan(class="form-control") }}
+                {% if form.subscription_plan.errors %}
+                    {% for error in form.subscription_plan.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+                <small class="text-muted">{{ form.subscription_plan.description }}</small>
+            </div>
+            
+            <div class="form-group">
+                {{ form.payment_receipt.label }}
+                {{ form.payment_receipt(class="form-control-file") }}
+                {% if form.payment_receipt.errors %}
+                    {% for error in form.payment_receipt.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+                <small class="text-muted">{{ form.payment_receipt.description }}</small>
+            </div>
+            
             <div class="alert alert-info">
                 <strong>Note:</strong> After creating your course, you'll be able to add modules, materials, and tests.
+                Your course will be available after admin approval and payment verification.
             </div>
             
             <div class="form-group">

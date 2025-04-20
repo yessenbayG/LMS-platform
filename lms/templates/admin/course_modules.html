@@ -4,50 +4,77 @@
 
 {% block content %}
 <div class="container">
-    <div class="row mb-4">
-        <div class="col">
-            <h1>Manage Course Modules</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-2">Manage Course Modules</h1>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('admin.manage_courses') }}">Courses</a></li>
+                <ol class="breadcrumb bg-light p-2 rounded">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.manage_courses') }}"><i class="fas fa-book"></i> Courses</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('admin.edit_course', course_id=course.id) }}">{{ course.title }}</a></li>
-                    <li class="breadcrumb-item active">Modules</li>
+                    <li class="breadcrumb-item active"><i class="fas fa-cubes"></i> Modules</li>
                 </ol>
             </nav>
+        </div>
+        <div>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
         </div>
     </div>
 
     <div class="row">
         <div class="col-md-12">
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3>Modules for {{ course.title }}</h3>
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0"><i class="fas fa-cubes mr-2"></i>Modules for {{ course.title }}</h3>
+                    <a href="#" class="btn btn-light">
+                        <i class="fas fa-plus-circle"></i> Add Module
+                    </a>
                 </div>
                 <div class="card-body">
                     {% if module_data %}
                         <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
+                            <table class="table table-hover">
+                                <thead class="table-light">
                                     <tr>
-                                        <th>Order</th>
+                                        <th class="text-center" width="70">Order</th>
                                         <th>Title</th>
                                         <th>Description</th>
-                                        <th>Materials</th>
-                                        <th>Tests</th>
-                                        <th>Actions</th>
+                                        <th class="text-center" width="100">
+                                            <i class="fas fa-file-alt" data-bs-toggle="tooltip" title="Materials"></i>
+                                        </th>
+                                        <th class="text-center" width="100">
+                                            <i class="fas fa-tasks" data-bs-toggle="tooltip" title="Tests"></i>
+                                        </th>
+                                        <th class="text-center" width="180">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for data in module_data %}
                                         <tr>
-                                            <td>{{ data.module.order }}</td>
-                                            <td>{{ data.module.title }}</td>
-                                            <td>{{ data.module.description|truncate(50) }}</td>
-                                            <td>{{ data.material_count }}</td>
-                                            <td>{{ data.test_count }}</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-secondary">{{ data.module.order }}</span>
+                                            </td>
                                             <td>
-                                                <a href="{{ url_for('admin.edit_module', module_id=data.module.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                                <strong>{{ data.module.title }}</strong>
+                                            </td>
+                                            <td>{{ data.module.description|truncate(50) }}</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-info">{{ data.material_count }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-warning">{{ data.test_count }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="btn-group">
+                                                    <a href="{{ url_for('admin.edit_module', module_id=data.module.id) }}" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-edit"></i> Edit
+                                                    </a>
+                                                    <a href="#" class="btn btn-sm btn-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                </div>
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -55,7 +82,10 @@
                             </table>
                         </div>
                     {% else %}
-                        <div class="alert alert-info">No modules have been created for this course yet.</div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-2"></i> No modules have been created for this course yet.
+                            <a href="#" class="btn btn-sm btn-primary ml-3">Create first module</a>
+                        </div>
                     {% endif %}
                 </div>
             </div>

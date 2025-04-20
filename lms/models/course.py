@@ -13,6 +13,18 @@ class Category(db.Model):
     def __repr__(self):
         return f'<Category {self.name}>'
 
+class TeacherSubscriptionPlan(db.Model):
+    __tablename__ = 'teacher_subscription_plans'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    max_students = db.Column(db.Integer, nullable=False)
+    price_per_month = db.Column(db.Integer, nullable=False)  # Price in KZT
+    description = db.Column(db.String(255))
+    
+    def __repr__(self):
+        return f'<TeacherSubscriptionPlan {self.name}>'
+
 class Course(db.Model):
     __tablename__ = 'courses'
     
@@ -22,15 +34,34 @@ class Course(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     image_path = db.Column(db.String(255))
-    is_active = db.Column(db.Boolean, default=True)  # New field for course activation status
-    is_approved = db.Column(db.Boolean, default=False)  # Field for admin approval status
+    is_active = db.Column(db.Boolean, default=True)  # Course activation status
+    is_approved = db.Column(db.Boolean, default=False)  # Admin approval status
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # New price fields
+    enrollment_price = db.Column(db.Integer, default=0)  # Price in KZT for student enrollment
+    subscription_plan_id = db.Column(db.Integer, db.ForeignKey('teacher_subscription_plans.id'))
+    payment_receipt_path = db.Column(db.String(255))  # Path to the teacher's payment receipt
+    payment_verified = db.Column(db.Boolean, default=False)  # Whether the teacher's payment has been verified
     
     # Relationships
     materials = db.relationship('Material', backref='course', lazy='dynamic', cascade="all, delete-orphan")
     assignments = db.relationship('Assignment', backref='course', lazy='dynamic', cascade="all, delete-orphan")
     enrollments = db.relationship('Enrollment', back_populates='course', lazy='dynamic', cascade="all, delete-orphan")
     modules = db.relationship('Module', backref='course', lazy='dynamic', cascade="all, delete-orphan")
+    subscription_plan = db.relationship('TeacherSubscriptionPlan', backref='courses')
+    
+    # Get the enrollment count for this course
+    @property
+    def enrollment_count(self):
+        return self.enrollments.count()
+    
+    @property
+    def is_at_capacity(self):
+        """Check if the course has reached its maximum student capacity based on the subscription plan"""
+        if not self.subscription_plan:
+            return False
+        return self.enrollment_count >= self.subscription_plan.max_students
     
     def __repr__(self):
         return f'<Course {self.title}>'
@@ -230,6 +261,13 @@ class Enrollment(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
     overall_grade = db.Column(db.Float)
+    is_favorite = db.Column(db.Boolean, default=False)  # Wishlist/favorites flag
+    
+    # New payment fields
+    payment_receipt_path = db.Column(db.String(255))  # Path to the student's payment receipt
+    payment_amount = db.Column(db.Integer)  # Amount paid in KZT
+    payment_verified = db.Column(db.Boolean, default=False)  # Whether the payment has been verified
+    payment_date = db.Column(db.DateTime)  # When the payment was made
     
     # Relationships
     student = db.relationship('User', back_populates='enrollments')
@@ -237,5 +275,28 @@ class Enrollment(db.Model):
     
     __table_args__ = (db.UniqueConstraint('student_id', 'course_id'),)
     
+    @property
+    def is_active(self):
+        """An enrollment is active if payment has been verified"""
+        return self.payment_verified
+    
     def __repr__(self):
         return f'<Enrollment {self.id}>'
+
+
+class Wishlist(db.Model):
+    __tablename__ = 'wishlist'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    student = db.relationship('User', backref=db.backref('wishlist_items', lazy='dynamic'))
+    course = db.relationship('Course', backref=db.backref('wishlist_entries', lazy='dynamic'))
+    
+    __table_args__ = (db.UniqueConstraint('student_id', 'course_id'),)
+    
+    def __repr__(self):
+        return f'<Wishlist {self.id}>'

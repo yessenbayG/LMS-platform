@@ -2,38 +2,897 @@
 
 {% block title %}Browse Courses - LMS{% endblock %}
 
-{% block content %}
-<h1>Browse Available Courses</h1>
+{% block head %}
+{{ super() }}
+<style>
+    /* Animation for course cards */
+    .course-card {
+        transition: all 0.3s ease;
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    
+    .course-card.appear {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    
+    /* Hover effects */
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    /* Filter tags animation */
+    .filter-tag {
+        animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Badge hover effect */
+    .badge {
+        transition: all 0.3s ease;
+    }
+    
+    .badge:hover {
+        transform: scale(1.1);
+    }
+    
+    /* Sort animation */
+    .sort-transition {
+        transition: all 0.5s ease;
+    }
+    
+    /* Clear filters button animation */
+    .clear-btn {
+        transition: all 0.3s ease;
+    }
+    
+    .clear-btn:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    /* Animated scrollbar for course listing */
+    .course-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .course-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .course-container::-webkit-scrollbar-thumb {
+        background: var(--lms-primary);
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .course-container::-webkit-scrollbar-thumb:hover {
+        background: var(--lms-primary-dark);
+    }
+    
+    /* Empty state styling */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        border: 2px dashed #dee2e6;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        color: #adb5bd;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state h4 {
+        color: #495057;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state p {
+        color: #6c757d;
+        max-width: 400px;
+        margin: 0 auto 1.5rem;
+    }
+</style>
+{% endblock %}
 
-<div class="card">
-    <div class="card-body">
-        {% if courses %}
-            <div class="course-grid">
-                {% for course in courses %}
-                <div class="course-card">
-                    <div class="course-card-header">
-                        <h4 class="course-title">{{ course.title }}</h4>
-                        <div class="course-teacher">Instructor: {{ course.teacher.get_full_name() }}</div>
-                    </div>
-                    <div class="course-card-body">
-                        <div class="course-description">
-                            {{ course.description[:150] }}{% if course.description|length > 150 %}...{% endif %}
+{% block content %}
+<div class="container mt-4">
+    <h1>Browse Courses</h1>
+    
+    <!-- Search and Filter - Premium Design -->
+    <div class="filter-section mb-4 animate__animated animate__fadeIn">
+        <div class="filter-header">
+            <h5><i class="fas fa-sliders-h"></i> Course Filter</h5>
+            <span class="filter-counter">{{ courses|length }} courses found</span>
+        </div>
+        <form method="GET" action="{{ url_for('student.browse_courses') }}" class="filter-form" id="filter-form">
+            <div class="filter-container">
+                <!-- Search Field -->
+                <div class="filter-group search-group">
+                    <div class="filter-field">
+                        <div class="search-icon">
+                            <i class="fas fa-search"></i>
                         </div>
-                    </div>
-                    <div class="course-card-footer">
-                        <a href="{{ url_for('student.view_course', course_id=course.id) }}" class="btn btn-primary">View Details</a>
-                        {% if course.id in enrolled_course_ids %}
-                            <a href="{{ url_for('student.unenroll_course', course_id=course.id) }}" class="btn btn-danger">Unenroll</a>
-                        {% else %}
-                            <a href="{{ url_for('student.enroll_course', course_id=course.id) }}" class="btn btn-success">Enroll</a>
+                        <input type="text" id="search" name="search" 
+                               class="search-input" 
+                               placeholder="Search courses..." 
+                               value="{{ search_query if search_query }}"
+                               autocomplete="off">
+                        {% if search_query %}
+                        <button type="button" class="clear-search" onclick="document.getElementById('search').value = ''; document.getElementById('filter-form').submit();">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
                         {% endif %}
                     </div>
                 </div>
-                {% endfor %}
+                
+                <!-- Category Filter -->
+                <div class="filter-group category-group">
+                    <select class="filter-select filter-select-with-icon" id="category_id" name="category_id" onchange="this.form.submit()">
+                        <option value="">🏷️ All Categories</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Sort By Filter -->
+                <div class="filter-group sort-group">
+                    <select class="filter-select filter-select-with-icon" id="sort_by" name="sort_by" onchange="this.form.submit()">
+                        <option value="popular" {% if sort_by == 'popular' %}selected{% endif %}>📊 Most Popular</option>
+                        <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>🆕 Newest First</option>
+                        <option value="title" {% if sort_by == 'title' %}selected{% endif %}>🔤 Title (A-Z)</option>
+                    </select>
+                </div>
+                
+                <!-- Apply Button -->
+                <div class="filter-group apply-group">
+                    <button type="submit" class="apply-button pulse-animation">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                </div>
             </div>
-        {% else %}
-            <p>No courses available at the moment.</p>
+            
+            <!-- Active Filters Display -->
+            {% if search_query or selected_category %}
+            <div class="active-filters">
+                <div class="filter-label">Active filters:</div>
+                <div class="filter-badges">
+                    {% if search_query %}
+                    <div class="filter-badge">
+                        <span class="filter-text">"{{ search_query }}"</span>
+                        <a href="{{ url_for('student.browse_courses', category_id=selected_category, sort_by=sort_by) }}" class="remove-filter">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if selected_category %}
+                    {% for category in categories %}
+                    {% if category.id == selected_category %}
+                    <div class="filter-badge">
+                        <span class="filter-text">{{ category.name }}</span>
+                        <a href="{{ url_for('student.browse_courses', search=search_query, sort_by=sort_by) }}" class="remove-filter">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <a href="{{ url_for('student.browse_courses') }}" class="clear-all-filters">
+                    <i class="fas fa-broom"></i> Clear All
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+    
+    <style>
+    /* Premium Filter Design */
+    .filter-section {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .filter-section:hover {
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    }
+    
+    .filter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: linear-gradient(to right, var(--lms-primary-light), #f8f9fa);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .filter-header h5 {
+        margin: 0;
+        color: var(--lms-primary);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .filter-counter {
+        font-size: 14px;
+        color: var(--lms-gray);
+        background-color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    
+    .filter-form {
+        padding: 20px;
+    }
+    
+    .filter-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .filter-group {
+        position: relative;
+        flex-grow: 1;
+    }
+    
+    .search-group {
+        flex: 3;
+        min-width: 250px;
+    }
+    
+    .category-group, .sort-group {
+        flex: 1.5;
+        min-width: 200px;
+    }
+    
+    .apply-group {
+        flex: 1;
+        min-width: 150px;
+    }
+    
+    .filter-field {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 16px;
+        color: #6c757d;
+        font-size: 16px;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 14px 40px;
+        border: 2px solid #e9ecef;
+        border-radius: 50px;
+        font-size: 16px;
+        transition: all 0.3s;
+    }
+    
+    .search-input:focus {
+        border-color: var(--lms-primary);
+        box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+        outline: none;
+    }
+    
+    .clear-search {
+        position: absolute;
+        right: 15px;
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    
+    .filter-label {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        z-index: 1;
+    }
+    
+    .filter-select {
+        width: 100%;
+        padding: 14px 15px 14px 40px;
+        border: 2px solid #e9ecef;
+        border-radius: 50px;
+        appearance: none;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat;
+        background-position: right 15px center;
+        background-size: 16px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .filter-select:focus {
+        border-color: var(--lms-primary);
+        box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+        outline: none;
+    }
+    
+    .apply-button {
+        width: 100%;
+        padding: 14px 25px;
+        background: linear-gradient(135deg, var(--lms-primary), var(--lms-primary-dark));
+        color: #1c1c1c;
+        border: none;
+        border-radius: 50px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .apply-button i {
+        margin-right: 0;
+    }
+    
+    .apply-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+    }
+    
+    .apply-button:active {
+        transform: translateY(0);
+    }
+    
+    .pulse-animation {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
+        }
+    }
+    
+    .active-filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .filter-label {
+        font-size: 14px;
+        color: #6c757d;
+        margin-right: 10px;
+        position: relative;
+        left: auto;
+        top: auto;
+        transform: none;
+    }
+    
+    .filter-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        flex: 1;
+    }
+    
+    .filter-badge {
+        display: inline-flex;
+        align-items: center;
+        background-color: #e9f5ff;
+        color: var(--lms-primary);
+        border-radius: 50px;
+        padding: 6px 12px;
+        font-size: 14px;
+        animation: fadeIn 0.3s;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(67, 97, 238, 0.1);
+    }
+    
+    .filter-badge:hover {
+        background-color: #dcecff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .filter-text {
+        margin-right: 6px;
+        font-weight: 500;
+    }
+    
+    .remove-filter {
+        color: var(--lms-primary);
+        opacity: 0.7;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+    }
+    
+    .remove-filter:hover {
+        opacity: 1;
+        color: var(--lms-primary-dark);
+        text-decoration: none;
+        transform: scale(1.1);
+    }
+    
+    .clear-all-filters {
+        color: #dc3545;
+        font-size: 14px;
+        font-weight: 500;
+        margin-left: auto;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: 1px solid rgba(220, 53, 69, 0.2);
+    }
+    
+    .clear-all-filters:hover {
+        color: white;
+        background-color: #dc3545;
+        text-decoration: none;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @media (max-width: 992px) {
+        .filter-container {
+            flex-direction: column;
+        }
+        
+        .filter-group {
+            width: 100%;
+        }
+        
+        .filter-group:not(:last-child) {
+            margin-bottom: 15px;
+        }
+    }
+    
+    /* New Course Card Styles */
+    .course-card-inner {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .course-card-inner:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 25px rgba(0, 0, 0, 0.12);
+    }
+    
+    .course-image {
+        height: 180px;
+        width: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .course-card-inner:hover .course-image {
+        transform: scale(1.05);
+    }
+    
+    .course-image-placeholder {
+        height: 180px;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #adb5bd;
+    }
+    
+    .course-image-placeholder p {
+        margin-top: 10px;
+    }
+    
+    .course-content {
+        padding: 20px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .course-title {
+        margin-top: 0;
+        margin-bottom: 10px;
+        color: var(--lms-dark);
+        font-weight: 600;
+    }
+    
+    .course-description {
+        color: var(--lms-gray);
+        margin-bottom: 15px;
+        line-height: 1.5;
+    }
+    
+    .course-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .course-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+    
+    .course-badge i {
+        margin-right: 5px;
+    }
+    
+    .course-badge.students {
+        background-color: #f1f5f9;
+        color: #64748b;
+    }
+    
+    .course-badge.category {
+        background-color: #e0f2fe;
+        color: #0284c7;
+    }
+    
+    .course-badge.price {
+        background-color: #d1fae5;
+        color: #047857;
+        font-weight: 600;
+    }
+    
+    .course-instructor {
+        display: flex;
+        align-items: center;
+        margin-top: auto;
+        font-size: 14px;
+        color: var(--lms-gray);
+    }
+    
+    .course-instructor i {
+        margin-right: 8px;
+        color: var(--lms-primary);
+    }
+    
+    .course-date {
+        margin-left: auto;
+        font-size: 12px;
+    }
+    
+    .course-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .course-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .enrolled-badge {
+        display: inline-flex;
+        align-items: center;
+        background-color: #dcfce7;
+        color: #166534;
+        border-radius: 20px;
+        padding: 5px 10px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+    
+    .enrolled-badge i {
+        margin-right: 5px;
+    }
+    </style>
+    
+    <!-- Course Count and Results Summary -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="filter-tag">Found {{ courses|length }} course{% if courses|length != 1 %}s{% endif %}</h5>
+        {% if search_query or selected_category %}
+            <div>
+                <span class="text-muted filter-tag">Filters applied: </span>
+                {% if search_query %}
+                    <span class="badge bg-primary filter-tag">Search: "{{ search_query }}"</span>
+                {% endif %}
+                {% if selected_category %}
+                    {% for category in categories %}
+                        {% if category.id == selected_category %}
+                            <span class="badge bg-info filter-tag">Category: {{ category.name }}</span>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                <a href="{{ url_for('student.browse_courses') }}" class="btn btn-sm btn-outline-secondary ml-2 clear-btn">Clear All</a>
+            </div>
         {% endif %}
     </div>
+    
+    <!-- Courses List -->
+    {% if courses %}
+        <div class="row sort-transition course-container" id="course-container">
+            {% for course in courses %}
+                <div class="col-md-4 mb-4 course-card" data-enrollment="{{ course_stats[course.id].enrollment_count }}">
+                    <div class="course-card-inner">
+                        {% if course.image_path %}
+                            <img src="{{ url_for('static', filename=course.image_path) }}" class="course-image" alt="{{ course.title }}">
+                        {% else %}
+                            <div class="course-image-placeholder">
+                                <i class="fas fa-book fa-3x"></i>
+                                <p>No image</p>
+                            </div>
+                        {% endif %}
+                        <div class="course-content">
+                            <h5 class="course-title">{{ course.title }}</h5>
+                            <p class="course-description">{{ course.description|truncate(100) }}</p>
+                            <div class="course-badges">
+                                <span class="course-badge students">
+                                    <i class="fas fa-users"></i> {{ course_stats[course.id].enrollment_count }} student{% if course_stats[course.id].enrollment_count != 1 %}s{% endif %}
+                                </span>
+                                {% if course.category %}
+                                    <span class="course-badge category">
+                                        <i class="fas fa-tag"></i> {{ course.category.name }}
+                                    </span>
+                                {% endif %}
+                                <span class="course-badge price">
+                                    <i class="fas fa-money-bill-wave"></i> {{ course.enrollment_price }} KZT
+                                </span>
+                            </div>
+                            <div class="course-instructor">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                                <span>{{ course.teacher.get_full_name() }}</span>
+                                <span class="course-date">{{ course.created_at.strftime('%b %d, %Y') }}</span>
+                            </div>
+                        </div>
+                        <div class="course-footer">
+                            <a href="{{ url_for('student.view_course', course_id=course.id) }}" class="btn btn-outline-primary btn-sm view-course-btn">View Course</a>
+                            <div class="course-actions">
+                                {% if course.id in enrolled_course_ids %}
+                                    <span class="enrolled-badge">
+                                        <i class="fas fa-check-circle"></i> Enrolled
+                                    </span>
+                                {% else %}
+                                    {% if course.id in wishlist_course_ids %}
+                                        <a href="{{ url_for('student.remove_from_wishlist', course_id=course.id) }}" class="btn btn-outline-danger btn-sm" title="Remove from wishlist">
+                                            <i class="fas fa-heart-broken"></i>
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('student.add_to_wishlist', course_id=course.id) }}" class="btn btn-outline-danger btn-sm" title="Add to wishlist">
+                                            <i class="far fa-heart"></i>
+                                        </a>
+                                    {% endif %}
+                                    <a href="{{ url_for('student.enroll_course', course_id=course.id) }}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-graduation-cap"></i> Enroll
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-book-open"></i>
+            <h4>No courses found</h4>
+            <p>We couldn't find any courses matching your criteria. Try adjusting your search terms or removing some filters.</p>
+            <a href="{{ url_for('student.browse_courses') }}" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> Reset Filters
+            </a>
+        </div>
+    {% endif %}
+    
+    <!-- Wishlist Quick Link -->
+    <div class="mt-4 text-center">
+        <a href="{{ url_for('student.view_wishlist') }}" class="btn btn-outline-danger">
+            <i class="fas fa-heart"></i> View My Wishlist
+        </a>
+    </div>
+    
+    <!-- JavaScript for animations -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate filter section on page load
+            const filterSection = document.querySelector('.filter-section');
+            setTimeout(() => {
+                filterSection.style.opacity = '1';
+            }, 300);
+            
+            // Animate course cards on page load with staggered effect
+            const courseCards = document.querySelectorAll('.course-card');
+            
+            courseCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('appear');
+                }, 100 + (80 * index)); // Stagger the animations
+            });
+            
+            // Enhanced sorting animation
+            const sortSelect = document.getElementById('sort_by');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    const container = document.getElementById('course-container');
+                    container.classList.add('fade-effect');
+                    setTimeout(() => {
+                        container.classList.remove('fade-effect');
+                    }, 500);
+                });
+            }
+            
+            // Button hover effects for course view
+            const viewButtons = document.querySelectorAll('.view-course-btn');
+            viewButtons.forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    this.innerHTML = '<i class="fas fa-eye"></i> View Course';
+                    this.classList.add('btn-expand');
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                    this.innerHTML = 'View Course';
+                    this.classList.remove('btn-expand');
+                });
+            });
+            
+            // Wishlist button animation
+            const wishlistButtons = document.querySelectorAll('.btn-outline-danger');
+            wishlistButtons.forEach(button => {
+                if (button.querySelector('.fa-heart-broken')) {
+                    // It's a "remove from wishlist" button
+                    button.addEventListener('mouseenter', function() {
+                        const icon = this.querySelector('i');
+                        icon.classList.remove('fa-heart-broken');
+                        icon.classList.add('fa-heart');
+                        this.setAttribute('title', 'Remove from wishlist');
+                    });
+                    
+                    button.addEventListener('mouseleave', function() {
+                        const icon = this.querySelector('i');
+                        icon.classList.remove('fa-heart');
+                        icon.classList.add('fa-heart-broken');
+                    });
+                } else if (button.querySelector('.fa-heart')) {
+                    // It's an "add to wishlist" button that's not the "View My Wishlist" button at the bottom
+                    if (!button.textContent.includes('View My Wishlist')) {
+                        button.addEventListener('mouseenter', function() {
+                            const icon = this.querySelector('i');
+                            if (icon.classList.contains('far')) {
+                                icon.classList.remove('far');
+                                icon.classList.add('fas');
+                                icon.classList.add('beating-heart');
+                                this.setAttribute('title', 'Add to wishlist');
+                            }
+                        });
+                        
+                        button.addEventListener('mouseleave', function() {
+                            const icon = this.querySelector('i');
+                            if (icon.classList.contains('fas') && icon.classList.contains('fa-heart')) {
+                                icon.classList.remove('fas');
+                                icon.classList.add('far');
+                                icon.classList.remove('beating-heart');
+                            }
+                        });
+                    }
+                }
+            });
+            
+            // Add animation class for filter changes
+            const filterInputs = document.querySelectorAll('.filter-select, .search-input');
+            filterInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    // Add a small visual feedback when filter changes
+                    this.classList.add('filter-changed');
+                    setTimeout(() => {
+                        this.classList.remove('filter-changed');
+                    }, 500);
+                });
+            });
+        });
+    </script>
+    
+    <style>
+    /* Additional animation styles */
+    .filter-section {
+        opacity: 0;
+        transition: opacity 0.5s ease, transform 0.5s ease;
+        transform: translateY(10px);
+    }
+    
+    .filter-section.animate__fadeIn {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .fade-effect {
+        animation: fadeEffect 0.5s ease;
+    }
+    
+    @keyframes fadeEffect {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    
+    .btn-expand {
+        transform: scale(1.05);
+    }
+    
+    .filter-changed {
+        animation: filterChanged 0.5s ease;
+    }
+    
+    @keyframes filterChanged {
+        0% { border-color: var(--lms-primary); box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2); }
+        100% { border-color: #e9ecef; box-shadow: none; }
+    }
+    
+    .beating-heart {
+        animation: heartBeat 1.3s infinite;
+        color: #dc3545;
+    }
+    
+    @keyframes heartBeat {
+        0% { transform: scale(1); }
+        14% { transform: scale(1.3); }
+        28% { transform: scale(1); }
+        42% { transform: scale(1.3); }
+        70% { transform: scale(1); }
+    }
+    </style>
 </div>
 {% endblock %}

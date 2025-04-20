@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from lms.utils.db import db
-from lms.utils.forms import SubmissionForm, TestAttemptForm
+from lms.utils.forms import SubmissionForm, TestAttemptForm, CertificateForm
 from lms.models.course import (Course, Material, Assignment, Submission, Enrollment, 
                               Module, Test, Question, QuestionOption, TestAttempt, 
-                              TestAnswer, ModuleProgress)
+                              TestAnswer, ModuleProgress, Wishlist)
+from lms.models.user import User, Role
 from datetime import datetime
 import json
 from werkzeug.utils import secure_filename
@@ -70,16 +71,67 @@ def dashboard():
 @login_required
 @student_required
 def browse_courses():
-    # Get all available ACTIVE and APPROVED courses
-    courses = Course.query.filter_by(is_active=True, is_approved=True).all()
+    # Get search parameters
+    search_query = request.args.get('search', '').strip()
+    category_id = request.args.get('category_id', type=int)
+    sort_by = request.args.get('sort_by', 'popular')  # Default sort by popularity
+    
+    # Base query for available courses (active and approved)
+    query = Course.query.filter_by(is_active=True, is_approved=True)
+    
+    # Apply search filters
+    if search_query:
+        query = query.filter(Course.title.ilike(f'%{search_query}%'))
+    
+    if category_id:
+        query = query.filter_by(category_id=category_id)
+    
+    # Get the filtered courses
+    courses = query.all()
+    
+    # Sort the courses
+    if sort_by == 'newest':
+        courses = sorted(courses, key=lambda c: c.created_at, reverse=True)
+    elif sort_by == 'title':
+        courses = sorted(courses, key=lambda c: c.title.lower())
+    else:  # Default: sort by popularity (enrollment count)
+        courses = sorted(courses, key=lambda c: c.enrollment_count, reverse=True)
+    
+    # Get all categories for the filter dropdown
+    categories = db.session.query(db.distinct(Course.category_id)).filter_by(is_active=True, is_approved=True).all()
+    category_list = []
+    for cat_id in categories:
+        if cat_id[0]:  # Skip None values
+            # Use query.get instead of get_or_404
+            from lms.models.course import Category
+            category = Category.query.get(cat_id[0])
+            if category:
+                category_list.append(category)
     
     # Get courses this student is already enrolled in
     enrollments = Enrollment.query.filter_by(student_id=current_user.id).all()
     enrolled_course_ids = [enrollment.course_id for enrollment in enrollments]
     
+    # Get wishlist items
+    wishlist_items = Wishlist.query.filter_by(student_id=current_user.id).all()
+    wishlist_course_ids = [item.course_id for item in wishlist_items]
+    
+    # Get the count of students enrolled in each course for display
+    course_stats = {}
+    for course in courses:
+        course_stats[course.id] = {
+            'enrollment_count': course.enrollment_count
+        }
+    
     return render_template('student/browse_courses.html', 
-                           courses=courses, 
-                           enrolled_course_ids=enrolled_course_ids)
+                          courses=courses, 
+                          enrolled_course_ids=enrolled_course_ids,
+                          wishlist_course_ids=wishlist_course_ids,
+                          categories=category_list,
+                          search_query=search_query,
+                          selected_category=category_id,
+                          sort_by=sort_by,
+                          course_stats=course_stats)
 
 @student_bp.route('/courses/<int:course_id>')
 @login_required
@@ -105,6 +157,12 @@ def view_course(course_id):
         course_id=course.id
     ).first()
     
+    # Check if in wishlist
+    wishlist_item = Wishlist.query.filter_by(
+        student_id=current_user.id,
+        course_id=course.id
+    ).first()
+    
     materials = Material.query.filter_by(course_id=course.id).all()
     assignments = Assignment.query.filter_by(course_id=course.id).all()
     
@@ -121,20 +179,26 @@ def view_course(course_id):
     return render_template('student/view_course.html', 
                            course=course, 
                            enrolled=enrollment is not None,
+                           in_wishlist=wishlist_item is not None,
                            materials=materials, 
                            assignments=assignments,
                            submitted_assignments=submitted_assignments)
 
-@student_bp.route('/courses/<int:course_id>/enroll')
+@student_bp.route('/courses/<int:course_id>/enroll', methods=['GET', 'POST'])
 @login_required
 @student_required
 def enroll_course(course_id):
     course = Course.query.get_or_404(course_id)
     
-    # Check if course is active
-    if not course.is_active:
+    # Check if course is active and approved
+    if not course.is_active or not course.is_approved:
         flash('This course is not currently available for enrollment.', 'warning')
         return redirect(url_for('student.browse_courses'))
+    
+    # Check if course has reached capacity
+    if course.is_at_capacity:
+        flash('This course has reached its maximum student capacity. Please try again later or contact the teacher.', 'warning')
+        return redirect(url_for('student.view_course', course_id=course.id))
     
     # Check if already enrolled
     enrollment = Enrollment.query.filter_by(
@@ -144,16 +208,60 @@ def enroll_course(course_id):
     
     if enrollment:
         flash('You are already enrolled in this course.', 'info')
-    else:
+        return redirect(url_for('student.view_course', course_id=course.id))
+    
+    # Handle enrollment with payment
+    from lms.utils.forms import EnrollmentForm
+    form = EnrollmentForm()
+    
+    if request.method == 'GET':
+        # Show enrollment form with payment upload
+        return render_template('student/enroll_course.html', 
+                              course=course, 
+                              form=form)
+    
+    # Handle form submission
+    if form.validate_on_submit():
+        payment_receipt_path = None
+        
+        # Handle payment receipt upload
+        if form.payment_receipt.data:
+            receipt = form.payment_receipt.data
+            receipt_filename = secure_filename(receipt.filename)
+            # Create a unique filename
+            unique_receipt_name = f"student_{current_user.id}_{int(datetime.utcnow().timestamp())}_{receipt_filename}"
+            payment_receipt_path = os.path.join('uploads', 'payment_receipts', unique_receipt_name)
+            
+            # Make sure the directory exists
+            receipt_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'payment_receipts')
+            os.makedirs(receipt_dir, exist_ok=True)
+            
+            # Save the file
+            receipt.save(os.path.join(receipt_dir, unique_receipt_name))
+        
+        # Create enrollment with payment information
         enrollment = Enrollment(
             student_id=current_user.id,
-            course_id=course.id
+            course_id=course.id,
+            payment_receipt_path=payment_receipt_path,
+            payment_amount=course.enrollment_price,
+            payment_verified=False,  # Payment needs to be verified by admin
+            payment_date=datetime.utcnow()
         )
         db.session.add(enrollment)
         db.session.commit()
-        flash('You have successfully enrolled in this course!', 'success')
+        
+        flash('Your enrollment request has been submitted with payment receipt. You will have full access to the course after payment verification.', 'success')
+        return redirect(url_for('student.view_course', course_id=course.id))
     
-    return redirect(url_for('student.view_course', course_id=course.id))
+    # If form validation failed
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(f"{getattr(form, field).label.text}: {error}", 'danger')
+    
+    return render_template('student/enroll_course.html', 
+                          course=course, 
+                          form=form)
 
 @student_bp.route('/courses/<int:course_id>/unenroll')
 @login_required
@@ -175,6 +283,62 @@ def unenroll_course(course_id):
         flash('You are not enrolled in this course.', 'info')
     
     return redirect(url_for('student.browse_courses'))
+
+@student_bp.route('/courses/<int:course_id>/wishlist/add')
+@login_required
+@student_required
+def add_to_wishlist(course_id):
+    course = Course.query.get_or_404(course_id)
+    
+    # Check if already in wishlist
+    wishlist_item = Wishlist.query.filter_by(
+        student_id=current_user.id,
+        course_id=course.id
+    ).first()
+    
+    if wishlist_item:
+        flash('This course is already in your wishlist.', 'info')
+    else:
+        wishlist_item = Wishlist(
+            student_id=current_user.id,
+            course_id=course.id
+        )
+        db.session.add(wishlist_item)
+        db.session.commit()
+        flash('Course added to your wishlist!', 'success')
+    
+    return redirect(url_for('student.view_course', course_id=course.id))
+
+@student_bp.route('/courses/<int:course_id>/wishlist/remove')
+@login_required
+@student_required
+def remove_from_wishlist(course_id):
+    course = Course.query.get_or_404(course_id)
+    
+    # Check if in wishlist
+    wishlist_item = Wishlist.query.filter_by(
+        student_id=current_user.id,
+        course_id=course.id
+    ).first()
+    
+    if wishlist_item:
+        db.session.delete(wishlist_item)
+        db.session.commit()
+        flash('Course removed from your wishlist.', 'success')
+    else:
+        flash('This course is not in your wishlist.', 'info')
+    
+    return redirect(url_for('student.view_course', course_id=course.id))
+
+@student_bp.route('/my-wishlist')
+@login_required
+@student_required
+def view_wishlist():
+    # Get all wishlist items
+    wishlist_items = Wishlist.query.filter_by(student_id=current_user.id).all()
+    wishlist_courses = [item.course for item in wishlist_items]
+    
+    return render_template('student/wishlist.html', courses=wishlist_courses)
 
 @student_bp.route('/assignments/<int:assignment_id>')
 @login_required
@@ -304,6 +468,11 @@ def view_course_modules(course_id):
     if not enrollment:
         flash('You must be enrolled in this course to view modules.', 'danger')
         return redirect(url_for('student.browse_courses'))
+    
+    # Check if the payment has been verified
+    if not enrollment.payment_verified:
+        flash('Your payment for this course is pending verification. You will have full access to course modules once your payment is verified.', 'warning')
+        return redirect(url_for('student.view_course', course_id=course.id))
     
     # Get all modules for this course
     modules = Module.query.filter_by(course_id=course.id).order_by(Module.order).all()
@@ -809,3 +978,49 @@ def view_grades():
         })
     
     return render_template('student/view_grades.html', course_data=course_data)
+
+@student_bp.route('/teacher-application', methods=['GET', 'POST'])
+@login_required
+@student_required
+def teacher_application():
+    # Check if already has a certificate or application pending
+    if current_user.certificate_path:
+        if current_user.certificate_verified:
+            flash('Your certificate has already been verified. You can now teach courses.', 'success')
+            return redirect(url_for('auth.profile'))
+        else:
+            flash('Your application is still under review. You will be notified when it is processed.', 'info')
+            return redirect(url_for('auth.profile'))
+    
+    form = CertificateForm()
+    if form.validate_on_submit():
+        try:
+            # Handle certificate upload
+            certificate_file = form.certificate.data
+            filename = secure_filename(certificate_file.filename)
+            # Create a unique filename
+            unique_filename = f"certificate_{current_user.id}_{int(datetime.utcnow().timestamp())}_{filename}"
+            certificate_path = os.path.join('uploads', 'certificates', unique_filename)
+            
+            # Make sure the directory exists
+            upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'certificates')
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Save the file
+            certificate_file.save(os.path.join(upload_dir, unique_filename))
+            
+            # Update user record
+            current_user.certificate_path = certificate_path
+            current_user.certificate_description = form.description.data
+            current_user.certificate_submitted_at = datetime.utcnow()
+            current_user.certificate_verified = False
+            
+            db.session.commit()
+            flash('Your application has been submitted and is awaiting review.', 'success')
+            return redirect(url_for('auth.profile'))
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Certificate upload error: {str(e)}")
+            flash(f'Error uploading certificate: {str(e)}', 'danger')
+    
+    return render_template('student/teacher_application.html', form=form)

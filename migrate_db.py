@@ -54,6 +54,14 @@ def upgrade_database():
         if 'certificate_submitted_at' not in user_columns:
             print("Adding certificate_submitted_at column to users table...")
             cursor.execute("ALTER TABLE users ADD COLUMN certificate_submitted_at TIMESTAMP")
+            
+        if 'certificate_description' not in user_columns:
+            print("Adding certificate_description column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN certificate_description TEXT")
+            
+        if 'about_me' not in user_columns:
+            print("Adding about_me column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN about_me TEXT")
         
         # Check if courses table has necessary columns
         cursor.execute("PRAGMA table_info(courses)")
@@ -88,6 +96,14 @@ def upgrade_database():
         if 'order' not in columns:
             print("Adding order column to materials table...")
             cursor.execute("ALTER TABLE materials ADD COLUMN \"order\" INTEGER DEFAULT 0")
+            
+        # Check if enrollments table has is_favorite column
+        cursor.execute("PRAGMA table_info(enrollments)")
+        enrollment_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'is_favorite' not in enrollment_columns:
+            print("Adding is_favorite column to enrollments table...")
+            cursor.execute("ALTER TABLE enrollments ADD COLUMN is_favorite BOOLEAN DEFAULT 0")
         
         # Create messages table if it doesn't exist
         cursor.execute('''
@@ -198,11 +214,98 @@ def upgrade_database():
         )
         ''')
         
+        # Create wishlist table if it doesn't exist
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS wishlist (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER NOT NULL,
+            course_id INTEGER NOT NULL,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (student_id) REFERENCES users (id),
+            FOREIGN KEY (course_id) REFERENCES courses (id),
+            UNIQUE(student_id, course_id)
+        )
+        ''')
+        
+        # Create payment subscription plans tables if it doesn't exist
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS teacher_subscription_plans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(50) NOT NULL,
+            max_students INTEGER NOT NULL,
+            price_per_month INTEGER NOT NULL,
+            description TEXT
+        )
+        ''')
+        
+        # Check if we need to add payment-related columns to courses
+        cursor.execute("PRAGMA table_info(courses)")
+        course_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'enrollment_price' not in course_columns:
+            print("Adding enrollment_price column to courses table...")
+            cursor.execute("ALTER TABLE courses ADD COLUMN enrollment_price INTEGER DEFAULT 0")
+            
+        if 'subscription_plan_id' not in course_columns:
+            print("Adding subscription_plan_id column to courses table...")
+            cursor.execute("ALTER TABLE courses ADD COLUMN subscription_plan_id INTEGER")
+            
+        if 'payment_receipt_path' not in course_columns:
+            print("Adding payment_receipt_path column to courses table...")
+            cursor.execute("ALTER TABLE courses ADD COLUMN payment_receipt_path VARCHAR(255)")
+            
+        if 'payment_verified' not in course_columns:
+            print("Adding payment_verified column to courses table...")
+            cursor.execute("ALTER TABLE courses ADD COLUMN payment_verified BOOLEAN DEFAULT 0")
+        
+        # Check if we need to add payment-related columns to enrollments
+        cursor.execute("PRAGMA table_info(enrollments)")
+        enrollment_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'payment_receipt_path' not in enrollment_columns:
+            print("Adding payment_receipt_path column to enrollments table...")
+            cursor.execute("ALTER TABLE enrollments ADD COLUMN payment_receipt_path VARCHAR(255)")
+            
+        if 'payment_amount' not in enrollment_columns:
+            print("Adding payment_amount column to enrollments table...")
+            cursor.execute("ALTER TABLE enrollments ADD COLUMN payment_amount INTEGER")
+            
+        if 'payment_verified' not in enrollment_columns:
+            print("Adding payment_verified column to enrollments table...")
+            cursor.execute("ALTER TABLE enrollments ADD COLUMN payment_verified BOOLEAN DEFAULT 0")
+            
+        if 'payment_date' not in enrollment_columns:
+            print("Adding payment_date column to enrollments table...")
+            cursor.execute("ALTER TABLE enrollments ADD COLUMN payment_date TIMESTAMP")
+        
+        # Check if we need to add subscription plans
+        cursor.execute("SELECT COUNT(*) FROM teacher_subscription_plans")
+        subscription_plan_count = cursor.fetchone()[0]
+        
+        if subscription_plan_count == 0:
+            print("Adding teacher subscription plans...")
+            subscription_plans = [
+                ("Standard - Up to 10 students", 10, 20000, "Basic plan for small classes"),
+                ("Pro - Up to 30 students", 30, 35000, "Professional plan for medium classes"),
+                ("Premium - Up to 100 students", 100, 70000, "Premium plan for large classes"),
+                ("Enterprise - Unlimited students", 10000, 100000, "Enterprise plan for unlimited students")
+            ]
+            
+            for plan in subscription_plans:
+                cursor.execute('''
+                INSERT INTO teacher_subscription_plans (name, max_students, price_per_month, description)
+                VALUES (?, ?, ?, ?)
+                ''', plan)
+            
+            print(f"Added {len(subscription_plans)} subscription plans")
+    
         # Create upload directories
         course_images_dir = os.path.join('lms', 'static', 'uploads', 'course_images')
         certificates_dir = os.path.join('lms', 'static', 'uploads', 'certificates')
+        payment_receipts_dir = os.path.join('lms', 'static', 'uploads', 'payment_receipts')
         os.makedirs(course_images_dir, exist_ok=True)
         os.makedirs(certificates_dir, exist_ok=True)
+        os.makedirs(payment_receipts_dir, exist_ok=True)
         
         # Create test messages if the messages table exists
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='messages'")

@@ -114,6 +114,7 @@ def profile():
         current_user.first_name = form.first_name.data
         current_user.last_name = form.last_name.data
         current_user.email = form.email.data
+        current_user.about_me = form.about_me.data
         db.session.commit()
         flash('Your profile has been updated!', 'success')
         return redirect(url_for('auth.profile'))
@@ -121,6 +122,7 @@ def profile():
         form.first_name.data = current_user.first_name
         form.last_name.data = current_user.last_name
         form.email.data = current_user.email
+        form.about_me.data = current_user.about_me
     
     return render_template('auth/profile.html', form=form)
 

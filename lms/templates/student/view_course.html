@@ -6,19 +6,59 @@
 <h1>{{ course.title }}</h1>
 
 <div class="card mb-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h3>Course Details</h3>
+        <div>
+            {% if in_wishlist %}
+                <a href="{{ url_for('student.remove_from_wishlist', course_id=course.id) }}" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-heart"></i> Remove from Wishlist
+                </a>
+            {% elif not enrolled %}
+                <a href="{{ url_for('student.add_to_wishlist', course_id=course.id) }}" class="btn btn-outline-danger btn-sm">
+                    <i class="far fa-heart"></i> Add to Wishlist
+                </a>
+            {% endif %}
+        </div>
     </div>
     <div class="card-body">
+        {% if course.image_path %}
+            <div class="mb-3 text-center">
+                <img src="{{ url_for('static', filename=course.image_path) }}" alt="{{ course.title }}" style="max-height: 250px; max-width: 100%;" class="img-fluid rounded">
+            </div>
+        {% endif %}
         <p><strong>Instructor:</strong> {{ course.teacher.get_full_name() }}</p>
         <p><strong>Category:</strong> {{ course.category.name if course.category else 'Uncategorized' }}</p>
         <p><strong>Created:</strong> {{ course.created_at.strftime('%Y-%m-%d') }}</p>
-        <p>{{ course.description }}</p>
+        
+        <div class="price-info alert alert-success">
+            <h5><i class="fas fa-tag"></i> Course Price: <strong>{{ course.enrollment_price }} KZT</strong></h5>
+            <p class="mb-0 small">{{ course.description }}</p>
+        </div>
         
         {% if not enrolled %}
-            <a href="{{ url_for('student.enroll_course', course_id=course.id) }}" class="btn btn-success">Enroll in Course</a>
+            <a href="{{ url_for('student.enroll_course', course_id=course.id) }}" class="btn btn-success">
+                <i class="fas fa-shopping-cart"></i> Enroll in Course ({{ course.enrollment_price }} KZT)
+            </a>
         {% else %}
-            <a href="{{ url_for('student.unenroll_course', course_id=course.id) }}" class="btn btn-danger">Unenroll from Course</a>
+            <div class="enrollment-status mb-3">
+                <h5>Enrollment Status</h5>
+                {% if enrolled.payment_verified %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> Your payment has been verified. You have full access to this course.
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock"></i> Your payment is pending verification. You will have full access once approved.
+                    </div>
+                {% endif %}
+            </div>
+            
+            <a href="{{ url_for('student.unenroll_course', course_id=course.id) }}" class="btn btn-danger">
+                <i class="fas fa-times-circle"></i> Unenroll from Course
+            </a>
+            <a href="{{ url_for('student.view_course_modules', course_id=course.id) }}" class="btn btn-primary ml-2">
+                <i class="fas fa-th-list"></i> View Course Modules
+            </a>
         {% endif %}
     </div>
 </div>

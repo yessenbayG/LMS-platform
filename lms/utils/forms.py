@@ -52,6 +52,7 @@ class ProfileUpdateForm(FlaskForm):
     first_name = StringField('First Name', validators=[DataRequired(), Length(min=2, max=50)])
     last_name = StringField('Last Name', validators=[DataRequired(), Length(min=2, max=50)])
     email = StringField('Email', validators=[DataRequired(), Email()])
+    about_me = TextAreaField('About Me', validators=[Optional(), Length(max=500)])
     submit = SubmitField('Update Profile')
     
     def __init__(self, original_email, *args, **kwargs):
@@ -74,7 +75,17 @@ class CourseCreationForm(FlaskForm):
     title = StringField('Course Title', validators=[DataRequired(), Length(min=3, max=100)])
     description = TextAreaField('Course Description', validators=[DataRequired()])
     category = SelectField('Category', coerce=int, validators=[DataRequired()])
-    course_image = FileField('Course Image', validators=[FileAllowed(['jpg', 'png', 'jpeg', 'gif'], 'Images only!')])
+    course_image = FileField('Course Image', validators=[Optional(), FileAllowed(['jpg', 'png', 'jpeg', 'gif'], 'Images only!')])
+    
+    # Pricing fields
+    enrollment_price = StringField('Enrollment Price (KZT)', validators=[DataRequired()])
+    subscription_plan = SelectField('Subscription Plan', coerce=int, validators=[DataRequired()], 
+                               description="Select your subscription plan based on expected number of students")
+    payment_receipt = FileField('Payment Receipt Image', validators=[
+                              Optional(),  # Changed to Optional for easier testing
+                              FileAllowed(['jpg', 'png', 'jpeg', 'pdf'], 'Images or PDF only!')
+                          ], description="Upload receipt of payment for your selected subscription plan")
+    
     submit = SubmitField('Create Course')
 
 def content_required_for_text_or_link(form, field):
@@ -145,3 +156,10 @@ class CertificateForm(FlaskForm):
     ])
     description = TextAreaField('Certificate Description', validators=[DataRequired()])
     submit = SubmitField('Submit Certificate')
+    
+class EnrollmentForm(FlaskForm):
+    payment_receipt = FileField('Payment Receipt', validators=[
+        DataRequired(), 
+        FileAllowed(['jpg', 'png', 'jpeg', 'pdf'], 'Images or PDF only!')
+    ], description="Upload receipt of your payment for this course")
+    submit = SubmitField('Complete Enrollment')

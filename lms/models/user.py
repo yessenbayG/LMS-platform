@@ -23,6 +23,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
+    about_me = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -31,6 +32,7 @@ class User(db.Model, UserMixin):
     certificate_path = db.Column(db.String(255), nullable=True, default=None)
     certificate_verified = db.Column(db.Boolean, nullable=True, default=False)
     certificate_submitted_at = db.Column(db.DateTime, nullable=True, default=None)
+    certificate_description = db.Column(db.Text, nullable=True)
     
     # Relationships
     created_courses = db.relationship('Course', backref='teacher', lazy='dynamic')

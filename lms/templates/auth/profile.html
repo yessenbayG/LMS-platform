@@ -3,7 +3,7 @@
 {% block title %}Profile - LMS{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 500px; margin: 0 auto;">
+<div class="card" style="max-width: 700px; margin: 0 auto;">
     <div class="card-header">
         <h2>Your Profile</h2>
     </div>
@@ -11,7 +11,7 @@
         <form method="POST" action="{{ url_for('auth.profile') }}">
             {{ form.csrf_token }}
             
-            <div class="form-group">
+            <div class="form-group mb-3">
                 {{ form.first_name.label }}
                 {{ form.first_name(class="form-control") }}
                 {% if form.first_name.errors %}
@@ -21,7 +21,7 @@
                 {% endif %}
             </div>
             
-            <div class="form-group">
+            <div class="form-group mb-3">
                 {{ form.last_name.label }}
                 {{ form.last_name(class="form-control") }}
                 {% if form.last_name.errors %}
@@ -31,7 +31,7 @@
                 {% endif %}
             </div>
             
-            <div class="form-group">
+            <div class="form-group mb-3">
                 {{ form.email.label }}
                 {{ form.email(class="form-control") }}
                 {% if form.email.errors %}
@@ -41,7 +41,69 @@
                 {% endif %}
             </div>
             
-            <div class="form-group">
+            <div class="form-group mb-3">
+                {{ form.about_me.label }}
+                {{ form.about_me(class="form-control", rows=4) }}
+                {% if form.about_me.errors %}
+                    {% for error in form.about_me.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+                <small class="text-muted">Share a little about yourself (max 500 characters)</small>
+            </div>
+            
+            {% if current_user.is_teacher() %}
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Teacher Certification</h5>
+                </div>
+                <div class="card-body">
+                    {% if current_user.certificate_path %}
+                        {% if current_user.certificate_verified %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i> Your certificate has been verified
+                            </div>
+                            <p><strong>Certificate:</strong> <a href="{{ url_for('static', filename=current_user.certificate_path) }}" target="_blank">View Certificate</a></p>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-clock"></i> Your certificate is pending verification
+                            </div>
+                            <p><strong>Certificate:</strong> <a href="{{ url_for('static', filename=current_user.certificate_path) }}" target="_blank">View Certificate</a></p>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted">No certificate uploaded.</p>
+                        <a href="{{ url_for('teacher.upload_certificate') if current_user.is_teacher() else '#' }}" class="btn btn-sm btn-outline-primary">
+                            Upload Certificate
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% elif current_user.is_student() %}
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Become an Instructor</h5>
+                </div>
+                <div class="card-body">
+                    {% if current_user.certificate_path %}
+                        {% if current_user.certificate_verified %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i> Your certificate has been verified. You are now eligible to create courses!
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-clock"></i> Your certificate is pending verification
+                            </div>
+                        {% endif %}
+                        <p><strong>Certificate:</strong> <a href="{{ url_for('static', filename=current_user.certificate_path) }}" target="_blank">View Certificate</a></p>
+                    {% else %}
+                        <p>Want to create and teach your own courses? Upload your teaching certificate or credentials to get started!</p>
+                        <a href="{{ url_for('student.teacher_application') }}" class="btn btn-outline-primary">Apply to Become an Instructor</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="form-group mt-4">
                 {{ form.submit(class="btn btn-primary") }}
             </div>
         </form>

@@ -5,13 +5,17 @@ from lms.utils.forms import (CourseCreationForm, MaterialForm, AssignmentForm, G
                             ModuleForm, TestForm, QuestionForm, OptionForm, CertificateForm)
 from lms.models.user import User, Role
 from lms.models.course import (Course, Category, Material, Assignment, Submission, Enrollment,
-                              Module, Test, Question, QuestionOption, TestAttempt, TestAnswer, ModuleProgress)
+                              Module, Test, Question, QuestionOption, TestAttempt, TestAnswer, 
+                              ModuleProgress, TeacherSubscriptionPlan)
 from werkzeug.utils import secure_filename
 import os
 from functools import wraps
 from datetime import datetime
 
 teacher_bp = Blueprint('teacher', __name__)
+
+# Debug flag - can be removed in production
+DEBUG_MODE = True
 
 def teacher_required(f):
     @wraps(f)
@@ -209,6 +213,19 @@ def certificate():
 @login_required
 @teacher_required
 def create_course():
+    # DEBUG INFORMATION
+    if DEBUG_MODE:
+        current_app.logger.debug(f"REQUEST METHOD: {request.method}")
+        current_app.logger.debug(f"REQUEST FORM: {request.form}")
+        current_app.logger.debug(f"REQUEST FILES: {request.files}")
+        
+        # Log subscription plans
+        try:
+            plans = TeacherSubscriptionPlan.query.all()
+            current_app.logger.debug(f"Available plans: {[(p.id, p.name) for p in plans]}")
+        except Exception as e:
+            current_app.logger.error(f"Error getting subscription plans: {str(e)}")
+    
     # Check if certificates are enabled and required
     try:
         # Use the has_verified_certificate method which has built-in error handling
@@ -226,10 +243,42 @@ def create_course():
     categories = Category.query.all()
     form.category.choices = [(c.id, c.name) for c in categories]
     
+    # Get available subscription plans for the dropdown
+    try:
+        subscription_plans = TeacherSubscriptionPlan.query.all()
+        if subscription_plans:
+            form.subscription_plan.choices = [(p.id, f"{p.name} - {p.price_per_month} KZT/month") for p in subscription_plans]
+        else:
+            # If no plans exist, create a default one for development purposes
+            if DEBUG_MODE:
+                flash('No subscription plans found. Creating a default plan for debugging.', 'warning')
+                default_plan = TeacherSubscriptionPlan(
+                    name="Default Plan - Up to 10 students", 
+                    max_students=10, 
+                    price_per_month=20000, 
+                    description="Default plan created for debugging"
+                )
+                db.session.add(default_plan)
+                db.session.commit()
+                form.subscription_plan.choices = [(default_plan.id, f"{default_plan.name} - {default_plan.price_per_month} KZT/month")]
+            else:
+                flash('No subscription plans are available. Please contact the administrator.', 'danger')
+                return redirect(url_for('teacher.dashboard'))
+    except Exception as e:
+        current_app.logger.error(f"Error setting up subscription plans: {str(e)}")
+        flash('An error occurred with subscription plans. Please try again later.', 'danger')
+        return redirect(url_for('teacher.dashboard'))
+    
+    if request.method == 'POST':
+        current_app.logger.debug(f"Form submitted: {request.form}")
+        current_app.logger.debug(f"Form files: {request.files}")
+    
     if form.validate_on_submit():
+        current_app.logger.debug("Form validation passed")
         image_path = None
+        payment_receipt_path = None
         
-        # Handle image upload
+        # Handle course image upload
         if form.course_image.data:
             image = form.course_image.data
             image_filename = secure_filename(image.filename)
@@ -244,20 +293,70 @@ def create_course():
             # Save the file
             image.save(os.path.join(upload_dir, unique_filename))
         
-        course = Course(
-            title=form.title.data,
-            description=form.description.data,
-            category_id=form.category.data,
-            teacher_id=current_user.id,
-            image_path=image_path,
-            is_approved=False  # Course is not approved by default
-        )
-        db.session.add(course)
-        db.session.commit()
-        flash('Course created successfully! It will be available after admin approval.', 'success')
+        # Handle payment receipt upload
+        if form.payment_receipt.data:
+            receipt = form.payment_receipt.data
+            receipt_filename = secure_filename(receipt.filename)
+            # Create a unique filename
+            unique_receipt_name = f"teacher_{current_user.id}_{int(datetime.utcnow().timestamp())}_{receipt_filename}"
+            payment_receipt_path = os.path.join('uploads', 'payment_receipts', unique_receipt_name)
+            
+            # Make sure the directory exists
+            receipt_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'payment_receipts')
+            os.makedirs(receipt_dir, exist_ok=True)
+            
+            # Save the file
+            receipt.save(os.path.join(receipt_dir, unique_receipt_name))
         
-        # Redirect to add modules instead of directly to course content
-        return redirect(url_for('teacher.manage_modules', course_id=course.id))
+        try:
+            # Create the course with payment information
+            try:
+                enrollment_price = int(form.enrollment_price.data)
+            except ValueError:
+                # If price is not an integer, try to handle it
+                try:
+                    # Remove any commas or spaces and try again
+                    clean_price = form.enrollment_price.data.replace(',', '').replace(' ', '')
+                    enrollment_price = int(clean_price)
+                except ValueError:
+                    flash('Please enter a valid integer for the enrollment price.', 'danger')
+                    return render_template('teacher/create_course.html', form=form)
+                
+            subscription_plan_id = form.subscription_plan.data
+            
+            # For development, if no payment receipt provided but DEBUG_MODE is on,
+            # auto-approve the payment
+            payment_verified = DEBUG_MODE and not payment_receipt_path
+            
+            course = Course(
+                title=form.title.data,
+                description=form.description.data,
+                category_id=form.category.data,
+                teacher_id=current_user.id,
+                image_path=image_path,
+                is_approved=False,  # Course is not approved by default
+                
+                # Payment-related fields
+                enrollment_price=enrollment_price,
+                subscription_plan_id=subscription_plan_id,
+                payment_receipt_path=payment_receipt_path,
+                payment_verified=payment_verified  # Auto-verified in debug mode if no receipt
+            )
+            
+            db.session.add(course)
+            db.session.commit()
+            flash('Course created successfully! It will be available after admin approval and payment verification.', 'success')
+            
+            # Redirect to add modules instead of directly to course content
+            return redirect(url_for('teacher.manage_modules', course_id=course.id))
+        except ValueError as e:
+            flash(f'Invalid price format: {str(e)}', 'danger')
+            return render_template('teacher/create_course.html', form=form)
+    else:
+        current_app.logger.debug(f"Form validation failed. Errors: {form.errors}")
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"{getattr(form, field).label.text}: {error}", 'danger')
     
     return render_template('teacher/create_course.html', form=form)
 
