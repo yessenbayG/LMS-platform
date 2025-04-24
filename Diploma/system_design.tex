@@ -1,0 +1,144 @@
+\section{System Design}
+
+This chapter presents the design of the subscription-based Learning Management System, focusing on architecture, database design, and user interface considerations.
+
+\subsection{System Architecture}
+
+The system uses a Model-View-Controller (MVC) architectural pattern that separates the application into three interconnected components, enhancing maintainability and scalability \cite{krasner1988}.
+
+\begin{figure}[h]
+\centering
+% You can insert a screenshot or diagram here
+\caption{High-level System Architecture}
+\label{fig:architecture}
+\end{figure}
+
+The architecture includes:
+
+\begin{itemize}
+    \item \textbf{Client Layer:} Browser-based interface using HTML, CSS, JavaScript with Bootstrap
+    \item \textbf{Application Layer:} Flask-based web application implementing business logic and authentication
+    \item \textbf{Data Layer:} SQLite database with SQLAlchemy ORM for data storage
+    \item \textbf{File Storage:} Local storage for course materials and payment receipts
+\end{itemize}
+
+Security is implemented through multiple layers: authentication using Flask-Login with password hashing, role-based access control, CSRF protection, input validation, and secure file upload validation.
+
+\subsection{Database Design}
+
+The database design utilizes Entity-Relationship modeling to represent relationships between users, courses, subscriptions, and educational content.
+
+\begin{figure}[h]
+\centering
+% You can insert a diagram here
+\caption{Entity-Relationship Diagram}
+\label{fig:erd}
+\end{figure}
+
+Key entities include:
+
+\begin{itemize}
+    \item \textbf{User:} System users with role designation (admin, teacher, student)
+    \item \textbf{TeacherSubscriptionPlan:} Subscription tiers with student capacity limits
+    \item \textbf{Course:} Educational courses with pricing and subscription information
+    \item \textbf{Module/Material:} Course content organization and storage
+    \item \textbf{Enrollment:} Student course access with payment verification
+    \item \textbf{Assignment/Submission:} Student work and assessment records
+    \item \textbf{Test/Question:} Assessment tools and student responses
+\end{itemize}
+
+\begin{lstlisting}[language=Python, caption=Course Model Example, label=lst:course-model]
+class Course(db.Model):
+    __tablename__ = 'courses'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    
+    # Payment related fields
+    enrollment_price = db.Column(db.Integer, default=0)
+    subscription_plan_id = db.Column(db.Integer, 
+                              db.ForeignKey('teacher_subscription_plans.id'))
+    payment_receipt_path = db.Column(db.String(255))
+    payment_verified = db.Column(db.Boolean, default=False)
+    
+    # Relationships
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    teacher = db.relationship('User', backref='courses')
+    modules = db.relationship('Module', backref='course',
+                           cascade='all, delete-orphan')
+\end{lstlisting}
+
+\subsection{Subscription and Payment Model}
+
+The system's key innovation is its subscription and payment model:
+
+\subsubsection{Teacher Subscription Tiers}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|l|}
+\hline
+\textbf{Plan Level} & \textbf{Max Students} & \textbf{Monthly Price (KZT)} & \textbf{Features} \\
+\hline
+Standard & 10 & 20,000 & Basic course tools \\
+Pro & 30 & 35,000 & + Advanced analytics \\
+Premium & 100 & 70,000 & + Priority support \\
+Enterprise & Unlimited & 100,000 & Full feature set \\
+\hline
+\end{tabular}
+\caption{Teacher Subscription Plans}
+\label{tab:subscription-plans}
+\end{table}
+
+\subsubsection{Payment Verification Approach}
+
+Rather than processing payments directly, the system implements external payment verification:
+
+\begin{enumerate}
+    \item Teachers upload proof of subscription payment
+    \item Administrators verify before approving courses
+    \item Students upload course payment receipts
+    \item Teachers verify student payments for access
+\end{enumerate}
+
+This approach reduces regulatory complexity while maintaining financial integrity.
+
+\subsection{User Interface Design}
+
+The interface emphasizes consistency, clarity, efficiency, responsiveness, and accessibility. Key user flows include:
+
+\textbf{Teacher Flow:} Register → Select subscription → Upload payment → Create courses → Manage content → Verify student enrollments
+
+\textbf{Student Flow:} Register → Browse courses → Enroll with payment → Access materials → Complete assignments
+
+\textbf{Administrator Flow:} Manage users → Verify payments → Approve courses → Monitor system activity
+
+\begin{figure}[h]
+\centering
+% Insert screenshot or mockup here
+\caption{Teacher Dashboard Interface}
+\label{fig:teacher-dashboard}
+\end{figure}
+
+\subsection{Technology Stack}
+
+The technology selection prioritized development efficiency, performance, and security:
+
+\begin{itemize}
+    \item \textbf{Backend:} Python with Flask (chosen for lightweight architecture and SQLAlchemy integration)
+    \item \textbf{Database:} SQLite for development, with migration path to PostgreSQL
+    \item \textbf{Frontend:} HTML5, CSS3, JavaScript, Bootstrap 4, and jQuery
+\end{itemize}
+
+\subsection{Design Challenges and Solutions}
+
+Three key challenges were addressed during system design:
+
+\begin{itemize}
+    \item \textbf{Balancing Flexibility and Complexity:} Solved using modular design with progressive disclosure UI techniques
+    
+    \item \textbf{Payment Verification Security:} Implemented multi-layered verification with image validation, admin review, and audit trails
+    
+    \item \textbf{Access Control Granularity:} Created role-based access with payment verification, enforced at controller and view levels
+\end{itemize}

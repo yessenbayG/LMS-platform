@@ -1,0 +1,352 @@
+\section*{Appendix A: System Screenshots}
+\addcontentsline{toc}{section}{Appendix A: System Screenshots}
+
+This appendix provides screenshots of the key interfaces in the subscription-based Learning Management System.
+
+\begin{figure}[h]
+\centering
+% Insert screenshot of admin dashboard here
+\caption{Administrator Dashboard}
+\label{fig:admin-dashboard}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+% Insert screenshot of teacher dashboard here
+\caption{Teacher Dashboard}
+\label{fig:teacher-dashboard-appendix}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+% Insert screenshot of student dashboard here
+\caption{Student Dashboard}
+\label{fig:student-dashboard}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+% Insert screenshot of course creation form here
+\caption{Course Creation Form with Subscription Plan Selection}
+\label{fig:course-creation-form}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+% Insert screenshot of payment verification interface here
+\caption{Admin Payment Verification Interface}
+\label{fig:payment-verification-interface}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+% Insert screenshot of student course enrollment here
+\caption{Student Course Enrollment with Payment}
+\label{fig:student-enrollment}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+% Insert screenshot of course content management here
+\caption{Course Content Management Interface}
+\label{fig:content-management}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+% Insert screenshot of course browsing page here
+\caption{Course Browsing Interface with Price Display}
+\label{fig:course-browsing}
+\end{figure}
+
+\section*{Appendix B: Database Schema}
+\addcontentsline{toc}{section}{Appendix B: Database Schema}
+
+This appendix provides the complete database schema for the subscription-based Learning Management System, illustrating the relationships between all entities in the system.
+
+\begin{figure}[h]
+\centering
+% Insert detailed database schema diagram here
+\caption{Complete Database Schema}
+\label{fig:database-schema}
+\end{figure}
+
+\section*{Appendix C: User Guide}
+\addcontentsline{toc}{section}{Appendix C: User Guide}
+
+This section provides a brief user guide for the key roles in the system.
+
+\subsection*{C.1 Administrator Guide}
+
+\subsubsection*{C.1.1 Verifying Teacher Payments}
+
+To verify a teacher's subscription payment:
+
+\begin{enumerate}
+    \item Log in with administrator credentials
+    \item Navigate to "Manage Courses"
+    \item Locate the course pending approval
+    \item Click "View Receipt" to examine the payment receipt
+    \item If the receipt is valid, click "Verify Payment"
+    \item Once payment is verified, you can approve the course
+\end{enumerate}
+
+\subsubsection*{C.1.2 Managing Subscription Plans}
+
+To manage subscription plans:
+
+\begin{enumerate}
+    \item Log in with administrator credentials
+    \item Navigate to "System Settings"
+    \item Select "Subscription Plans"
+    \item From here, you can view, edit, add, or remove subscription plans
+\end{enumerate}
+
+\subsection*{C.2 Teacher Guide}
+
+\subsubsection*{C.2.1 Creating a Course with Subscription Plan}
+
+To create a new course:
+
+\begin{enumerate}
+    \item Log in with teacher credentials
+    \item Navigate to "Create Course"
+    \item Fill in course details (title, description, category)
+    \item Set the enrollment price for students
+    \item Select the appropriate subscription plan based on expected student numbers
+    \item Upload a payment receipt for your subscription
+    \item Submit the course for approval
+\end{enumerate}
+
+\subsubsection*{C.2.2 Verifying Student Payments}
+
+To verify student enrollment payments:
+
+\begin{enumerate}
+    \item Log in with teacher credentials
+    \item Navigate to "My Courses"
+    \item Select the relevant course
+    \item Go to "Students" tab
+    \item View pending enrollments
+    \item Click "View Receipt" to examine the payment
+    \item Click "Verify Payment" to approve the enrollment
+\end{enumerate}
+
+\subsection*{C.3 Student Guide}
+
+\subsubsection*{C.3.1 Enrolling in a Course with Payment}
+
+To enroll in a course:
+
+\begin{enumerate}
+    \item Log in with student credentials
+    \item Browse available courses
+    \item Select a course of interest
+    \item Click "Enroll"
+    \item Note the enrollment price
+    \item Make payment using your preferred method
+    \item Upload the payment receipt
+    \item Wait for teacher verification (usually within 24 hours)
+\end{enumerate}
+
+\subsubsection*{C.3.2 Accessing Course Content}
+
+To access course content after enrollment:
+
+\begin{enumerate}
+    \item Log in with student credentials
+    \item Navigate to "My Courses"
+    \item Select the course
+    \item Navigate through modules using the left sidebar
+    \item Complete assignments and tests as required
+    \item Track your progress through the course dashboard
+\end{enumerate}
+
+\section*{Appendix D: Implementation Code Samples}
+\addcontentsline{toc}{section}{Appendix D: Implementation Code Samples}
+
+This appendix provides additional code samples from the implementation that were not included in the main text.
+
+\subsection*{D.1 User Authentication and Registration}
+
+\begin{lstlisting}[language=Python, caption=User Registration Implementation]
+@auth_bp.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+        
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        # Check if email already exists
+        existing_user = User.query.filter_by(email=form.email.data).first()
+        if existing_user:
+            flash('Email already registered. Please use a different email.', 'danger')
+            return render_template('auth/register.html', title='Register', form=form)
+            
+        # Create new user
+        user = User(
+            email=form.email.data,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            role='student'  # Default role is student
+        )
+        user.set_password(form.password.data)
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('Registration successful! You can now log in.', 'success')
+        return redirect(url_for('auth.login'))
+        
+    return render_template('auth/register.html', title='Register', form=form)
+\end{lstlisting}
+
+\subsection*{D.2 Module and Material Management}
+
+\begin{lstlisting}[language=Python, caption=Module Creation and Management]
+@teacher_bp.route('/course/<int:course_id>/modules/create', methods=['GET', 'POST'])
+@login_required
+@teacher_required
+def create_module(course_id):
+    course = Course.query.get_or_404(course_id)
+    
+    # Ensure teacher owns the course
+    if course.teacher_id != current_user.id:
+        flash('Access denied: You do not own this course.', 'danger')
+        return redirect(url_for('teacher.dashboard'))
+    
+    form = ModuleForm()
+    
+    if form.validate_on_submit():
+        # Get the highest order value to place this module at the end
+        highest_order = db.session.query(func.max(Module.order)).filter_by(course_id=course_id).scalar()
+        new_order = (highest_order or 0) + 1
+        
+        module = Module(
+            title=form.title.data,
+            description=form.description.data,
+            course_id=course_id,
+            order=new_order
+        )
+        
+        db.session.add(module)
+        db.session.commit()
+        
+        flash('Module created successfully!', 'success')
+        return redirect(url_for('teacher.view_module', module_id=module.id))
+    
+    return render_template('teacher/create_module.html', form=form, course=course)
+\end{lstlisting}
+
+\subsection*{D.3 Test and Assessment Implementation}
+
+\begin{lstlisting}[language=Python, caption=Test Creation and Question Management]
+@teacher_bp.route('/module/<int:module_id>/tests/create', methods=['GET', 'POST'])
+@login_required
+@teacher_required
+def create_test(module_id):
+    module = Module.query.get_or_404(module_id)
+    course = module.course
+    
+    # Ensure teacher owns the course
+    if course.teacher_id != current_user.id:
+        flash('Access denied: You do not own this course.', 'danger')
+        return redirect(url_for('teacher.dashboard'))
+    
+    form = TestForm()
+    
+    if form.validate_on_submit():
+        test = Test(
+            title=form.title.data,
+            description=form.description.data,
+            module_id=module_id,
+            passing_score=form.passing_score.data,
+            time_limit=form.time_limit.data
+        )
+        
+        db.session.add(test)
+        db.session.commit()
+        
+        flash('Test created successfully! Now add questions to your test.', 'success')
+        return redirect(url_for('teacher.edit_test', test_id=test.id))
+    
+    return render_template('teacher/create_test.html', form=form, module=module, course=course)
+\end{lstlisting}
+
+\subsection*{D.4 Responsive CSS Implementation}
+
+\begin{lstlisting}[language=CSS, caption=Responsive Dashboard CSS]
+/* Dashboard widgets responsive layout */
+.dashboard-widgets {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md);
+}
+
+.widget {
+  background-color: var(--bg-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+  transition: transform var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Media queries for responsive grid */
+@media (min-width: 576px) {
+  .dashboard-widgets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
+  .dashboard-widgets {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .dashboard-widgets {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Mobile optimizations for tables */
+@media (max-width: 768px) {
+  .table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .table-responsive table {
+    min-width: 500px;
+  }
+  
+  /* Convert tables to cards on mobile */
+  .mobile-card-view tr {
+    display: block;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+  }
+  
+  .mobile-card-view td {
+    display: block;
+    text-align: right;
+    position: relative;
+    padding-left: 50%;
+  }
+  
+  .mobile-card-view td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 1rem;
+    font-weight: bold;
+    text-align: left;
+  }
+}
+\end{lstlisting}

@@ -76,7 +76,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ applicant.certificate_submitted_at.strftime('%Y-%m-%d') if applicant.certificate_submitted_at else 'Unknown' }}</td>
-                            <td>
+                            <td >
                                 <form action="{{ url_for('admin.approve_student_application', user_id=applicant.id) }}" method="post" class="d-inline">
                                     {{ csrf_token }}
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -198,7 +198,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="d-flex flex-column">
+                                    <div class="d-flex flex-column" style="gap: 5px;">
                                         <a href="{{ url_for('admin.toggle_user_status', user_id=teacher.id) }}" 
                                            class="btn btn-sm {% if teacher.is_active %}btn-warning{% else %}btn-success{% endif %} mb-1"
                                            onclick="return confirm('Are you sure you want to {% if teacher.is_active %}deactivate{% else %}activate{% endif %} this teacher account?')">

@@ -1,0 +1,324 @@
+\section{Implementation}
+
+This chapter outlines the implementation of the subscription-based Learning Management System, focusing on key components and technical solutions.
+
+\subsection{Development Environment and Database Implementation}
+
+The system was developed using Python 3.10 with Flask framework in a virtual environment managed via venv. Key dependencies included Flask-SQLAlchemy for database ORM, Flask-Login for authentication, and Flask-WTF for form handling.
+
+\subsubsection{Database Models}
+
+The TeacherSubscriptionPlan model represents the core innovation of the system:
+
+\begin{lstlisting}[language=Python, caption=TeacherSubscriptionPlan Model, label=lst:subscription-model]
+class TeacherSubscriptionPlan(db.Model):
+    __tablename__ = 'teacher_subscription_plans'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    max_students = db.Column(db.Integer, nullable=False)
+    price_per_month = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.String(255))
+    
+    # Relationships
+    courses = db.relationship('Course', backref='subscription_plan')
+    
+    def is_within_capacity(self, teacher_id):
+        """Check if a teacher is within their subscription capacity"""
+        from .course import Course, Enrollment
+        
+        # Count active courses by this teacher using this plan
+        courses = Course.query.filter_by(
+            teacher_id=teacher_id,
+            subscription_plan_id=self.id,
+            is_active=True
+        ).all()
+        
+        # Count unique students enrolled across these courses
+        student_ids = set()
+        for course in courses:
+            enrollments = Enrollment.query.filter_by(
+                course_id=course.id,
+                payment_verified=True
+            ).all()
+            student_ids.update(e.student_id for e in enrollments)
+        
+        return len(student_ids) <= self.max_students
+\end{lstlisting}
+
+\subsubsection{Database Migrations}
+
+Schema evolution was handled via a migration script that creates necessary tables and adds payment-related columns incrementally:
+
+\begin{lstlisting}[language=Python, caption=Migration Script Excerpt, label=lst:migration]
+def migrate_db():
+    """Run database migrations to update schema"""
+    conn = sqlite3.connect('instance/lms.db')
+    cursor = conn.cursor()
+    
+    # Create subscription plans table if needed
+    cursor.execute("""
+    SELECT name FROM sqlite_master
+    WHERE type='table' AND name='teacher_subscription_plans'
+    """)
+    
+    if not cursor.fetchone():
+        cursor.execute('''
+        CREATE TABLE teacher_subscription_plans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(50) NOT NULL,
+            max_students INTEGER NOT NULL,
+            price_per_month INTEGER NOT NULL,
+            description TEXT
+        )
+        ''')
+        
+        # Add default plans
+        subscription_plans = [
+            ("Standard - Up to 10 students", 10, 20000, 
+             "Basic plan for small classes"),
+            ("Pro - Up to 30 students", 30, 35000, 
+             "Professional plan for medium classes"),
+            ("Premium - Up to 100 students", 100, 70000, 
+             "Premium plan for large classes"),
+            ("Enterprise - Unlimited", 10000, 100000, 
+             "Enterprise plan for unlimited students")
+        ]
+        
+        cursor.executemany(
+            "INSERT INTO teacher_subscription_plans (name, max_students, price_per_month, description) VALUES (?, ?, ?, ?)",
+            subscription_plans
+        )
+\end{lstlisting}
+
+\subsection{Authentication and Authorization}
+
+Security was implemented using Flask-Login for session management with a role-based access control system:
+
+\begin{lstlisting}[language=Python, caption=Role-Based Access Control, label=lst:rbac]
+def admin_required(f):
+    """Restrict access to admin users"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin():
+            flash('Access restricted. Admin privileges required.', 'danger')
+            return redirect(url_for('auth.login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Applied to routes
+@admin_bp.route('/dashboard')
+@login_required
+@admin_required
+def dashboard():
+    return render_template('admin/dashboard.html')
+\end{lstlisting}
+
+\subsection{Subscription and Payment Features}
+
+\subsubsection{Teacher Subscription Management}
+
+Course creation includes subscription plan selection and payment receipt upload:
+
+\begin{lstlisting}[language=Python, caption=Course Creation with Subscription, label=lst:subscription-management]
+@teacher_bp.route('/create-course', methods=['GET', 'POST'])
+@login_required
+@teacher_required
+def create_course():
+    form = CourseCreationForm()
+    
+    # Populate subscription plan choices
+    subscription_plans = TeacherSubscriptionPlan.query.all()
+    form.subscription_plan.choices = [
+        (p.id, f"{p.name} - {p.price_per_month} KZT/month") 
+        for p in subscription_plans
+    ]
+    
+    if form.validate_on_submit():
+        course = Course(
+            title=form.title.data,
+            description=form.description.data,
+            teacher_id=current_user.id,
+            category_id=form.category.data,
+            enrollment_price=form.enrollment_price.data,
+            subscription_plan_id=form.subscription_plan.data
+        )
+        
+        # Handle payment receipt upload
+        if form.payment_receipt.data:
+            filename = secure_filename(form.payment_receipt.data.filename)
+            timestamp = int(time.time())
+            receipt_filename = f"{course.id}_{timestamp}_{filename}"
+            filepath = os.path.join(
+                current_app.config['UPLOAD_FOLDER'], 
+                'payments', 
+                receipt_filename
+            )
+            form.payment_receipt.data.save(filepath)
+            course.payment_receipt_path = f"uploads/payments/{receipt_filename}"
+        
+        db.session.add(course)
+        db.session.commit()
+        return redirect(url_for('teacher.dashboard'))
+\end{lstlisting}
+
+\subsubsection{Student Enrollment with Payment}
+
+Students enroll in courses by uploading payment receipts:
+
+\begin{lstlisting}[language=Python, caption=Student Enrollment, label=lst:enrollment]
+@student_bp.route('/enroll/<int:course_id>', methods=['GET', 'POST'])
+@login_required
+@student_required
+def enroll_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    form = EnrollmentForm()
+    
+    if form.validate_on_submit():
+        enrollment = Enrollment(
+            student_id=current_user.id,
+            course_id=course.id,
+            payment_amount=course.enrollment_price,
+            payment_date=datetime.utcnow()
+        )
+        
+        # Handle payment receipt upload
+        if form.payment_receipt.data:
+            filename = secure_filename(form.payment_receipt.data.filename)
+            timestamp = int(time.time())
+            receipt_filename = f"enrollment_{course.id}_{current_user.id}_{timestamp}_{filename}"
+            filepath = os.path.join(
+                current_app.config['UPLOAD_FOLDER'], 
+                'enrollment_receipts', 
+                receipt_filename
+            )
+            form.payment_receipt.data.save(filepath)
+            enrollment.payment_receipt_path = f"uploads/enrollment_receipts/{receipt_filename}"
+        
+        db.session.add(enrollment)
+        db.session.commit()
+        return redirect(url_for('student.dashboard'))
+\end{lstlisting}
+
+\subsection{User Interface Implementation}
+
+The UI was built using Jinja2 templates with Bootstrap 4, implementing responsive design and modal dialogs for viewing certificates and receipts:
+
+\begin{lstlisting}[language=HTML, caption=Payment Receipt Modal, label=lst:modal-html]
+<!-- Button trigger for modal -->
+<button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#paymentModal{{ course.id }}">
+    <i class="fas fa-receipt mr-1"></i> View Receipt
+</button>
+
+<!-- Payment Receipt Modal -->
+<div class="modal fade" id="paymentModal{{ course.id }}" tabindex="-1" role="dialog" aria-labelledby="paymentModalLabel{{ course.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel{{ course.id }}">
+                    Payment Receipt - {{ course.title }}
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                {% if course.payment_receipt_path.endswith('.pdf') %}
+                    <div class="embed-responsive embed-responsive-1by1 mb-3">
+                        <iframe class="embed-responsive-item" 
+                                src="{{ url_for('static', filename=course.payment_receipt_path) }}">
+                        </iframe>
+                    </div>
+                {% else %}
+                    <img src="{{ url_for('static', filename=course.payment_receipt_path) }}" 
+                         class="img-fluid" alt="Payment Receipt">
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                {% if not course.payment_verified %}
+                    <form action="{{ url_for('admin.verify_teacher_payment', course_id=course.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check-circle mr-1"></i> Verify Payment
+                        </button>
+                    </form>
+                {% endif %}
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+\end{lstlisting}
+
+\subsection{Implementation Challenges and Solutions}
+
+The development process encountered several technical challenges:
+
+\subsubsection{File Upload Security}
+
+Secure handling of payment receipts required multiple security measures:
+\begin{itemize}
+    \item Filename sanitization using secure\_filename
+    \item File type validation with FileAllowed validators
+    \item Timestamped filenames to prevent collisions
+    \item Format-specific rendering (PDF vs. images)
+\end{itemize}
+
+\subsubsection{Modal Dialog Functionality}
+
+Modal dialogs initially failed to display correctly across browsers, requiring:
+\begin{itemize}
+    \item Switching from Bootstrap 5 to Bootstrap 4 for compatibility
+    \item Adding explicit JavaScript initialization for modal triggers
+    \item Using proper data-toggle and data-target attributes
+\end{itemize}
+
+\begin{lstlisting}[language=JavaScript, caption=Modal Initialization, label=lst:modal-js]
+$(document).ready(function() {
+    $('[data-toggle="modal"]').on('click', function() {
+        var target = $(this).data('target');
+        $(target).modal('show');
+    });
+});
+\end{lstlisting}
+
+\subsubsection{Subscription Capacity Monitoring}
+
+Tracking student counts across courses required a specialized approach to gather unique students per subscription plan:
+
+\begin{lstlisting}[language=Python, caption=Capacity Monitoring, label=lst:capacity-monitoring]
+def get_subscription_usage(teacher_id):
+    usage_data = {}
+    courses = Course.query.filter_by(teacher_id=teacher_id, is_active=True).all()
+    
+    # Group courses by subscription plan
+    plan_courses = {}
+    for course in courses:
+        if course.subscription_plan_id not in plan_courses:
+            plan_courses[course.subscription_plan_id] = []
+        plan_courses[course.subscription_plan_id].append(course)
+    
+    # Count unique students per plan
+    for plan_id, courses in plan_courses.items():
+        plan = TeacherSubscriptionPlan.query.get(plan_id)
+        if not plan:
+            continue
+        
+        student_ids = set()
+        for course in courses:
+            enrollments = Enrollment.query.filter_by(
+                course_id=course.id,
+                payment_verified=True
+            ).all()
+            student_ids.update(e.student_id for e in enrollments)
+        
+        usage_data[plan_id] = {
+            'plan': plan,
+            'current_students': len(student_ids),
+            'max_students': plan.max_students,
+            'percentage': (len(student_ids) / plan.max_students) * 100 
+                if plan.max_students > 0 else 0
+        }
+    
+    return usage_data
+\end{lstlisting}

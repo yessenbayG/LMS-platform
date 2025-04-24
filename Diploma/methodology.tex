@@ -1,0 +1,66 @@
+\section{Methodology}
+
+This chapter outlines the methodological approach used for designing, developing, and evaluating the subscription-based Learning Management System.
+
+\subsection{Research Approach}
+
+This project employed a design science research methodology as described by Hevner \cite{hevner2004}, which is appropriate for creating innovative information systems artifacts. The process followed six key steps: problem identification, objective definition, design and development, demonstration, evaluation, and communication.
+
+Requirements were gathered through:
+
+\begin{itemize}
+    \item \textbf{Literature Analysis:} Review of 42 academic papers and 15 industry reports (2014-2023) on LMS platforms, e-learning business models, and educational technology
+    
+    \item \textbf{Platform Analysis:} Competitive evaluation of traditional LMS platforms (Moodle, Canvas), course marketplaces (Udemy, Coursera), and creator-focused platforms (Teachable, Podia)
+    
+    \item \textbf{Secondary User Research:} Analysis of published surveys, user reviews, and forum discussions to provide user insights within project constraints
+\end{itemize}
+
+\subsection{System Design and Development}
+
+\subsubsection{Design Approach}
+
+The system was designed using an object-oriented approach with:
+
+\begin{itemize}
+    \item \textbf{MVC Architecture:} Selected for separation of data, presentation, and application logic \cite{leff2001}
+    
+    \item \textbf{Entity-Relationship Modeling:} Used for database schema design, identifying key entities, defining relationships, and implementing with SQLAlchemy ORM
+    
+    \item \textbf{User-Centered UI Design:} Focused on accessibility (WCAG 2.1), responsive design, consistent navigation, and progressive disclosure
+\end{itemize}
+
+\subsubsection{Development Process}
+
+The development process followed agile methodology with iterative cycles \cite{dingsoyr2012}. The technology stack included:
+
+\begin{itemize}
+    \item Backend: Python with Flask framework
+    \item Database: SQLite with SQLAlchemy ORM
+    \item Frontend: HTML5, CSS3, JavaScript with Bootstrap
+    \item Version Control: Git
+\end{itemize}
+
+Development was organized into phases: environment setup, database implementation, core functionality, subscription management, payment verification, content delivery, UI refinement, and testing.
+
+\subsection{Testing and Evaluation}
+
+Testing employed a multi-level approach:
+
+\begin{itemize}
+    \item \textbf{Unit Testing:} Individual component testing using Python's unittest framework
+    
+    \item \textbf{Integration Testing:} Verification of component interactions for user registration, course creation, enrollment, and content access
+    
+    \item \textbf{UI Testing:} Cross-browser and multi-device testing for responsive behavior
+    
+    \item \textbf{Performance Evaluation:} Assessment of response times, query efficiency, and resource utilization
+    
+    \item \textbf{Usability Evaluation:} Heuristic analysis based on Nielsen's principles \cite{nielsen1994} and task completion assessment
+\end{itemize}
+
+\subsection{Ethical Considerations and Limitations}
+
+Ethical dimensions addressed included privacy (data minimization), accessibility (inclusive design), fairness (balanced pricing models), and transparency (clear fee communication).
+
+Methodological limitations included restricted direct user research, simplified implementation of certain features, prioritization of functionality over optimization, and limited testing environments. Despite these constraints, the methodology provided a structured approach balancing academic requirements with practical implementation.

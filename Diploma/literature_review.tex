@@ -1,0 +1,48 @@
+\section{Literature Review}
+
+This chapter reviews existing research on Learning Management Systems, focusing on business models, monetization approaches, and technical implementations relevant to our project.
+
+\subsection{Evolution of Learning Management Systems}
+
+Learning Management Systems have evolved from simple content repositories to sophisticated learning platforms. According to Dahlstrom et al. \cite{dahlstrom2014}, modern LMS platforms incorporate assessment tools, analytics, social features, and mobile access—significantly expanding beyond their original purpose.
+
+Kats \cite{kats2013} identifies three evolutionary stages:
+\begin{itemize}
+    \item First generation (1990s): Basic content repositories with limited interaction
+    \item Second generation (2000s): Interactive platforms with assessment capabilities
+    \item Third generation (2010s onward): Social learning with personalization and analytics
+\end{itemize}
+
+Rhode et al. \cite{rhode2017} suggest we're now entering a fourth generation featuring AI-driven personalization and more diverse business models.
+
+\subsection{Business Models in Educational Technology}
+
+Traditional LMS platforms primarily use institution-centric business models with annual licensing fees based on institution size or features \cite{lieberman2018}. In contrast, marketplace platforms like Udemy and Coursera employ different approaches:
+
+\begin{itemize}
+    \item Revenue sharing: Platforms take 30-50\% of instructor earnings
+    \item Subscription services: Learners pay for access to all content
+    \item Certification fees: Learners pay for verified certificates
+\end{itemize}
+
+More recently, creator-centric platforms like Teachable and Podia charge educators fixed monthly fees rather than revenue percentages \cite{goel2019}, giving content creators greater control over pricing—similar to our proposed model but without student capacity-based tiers.
+
+\subsection{Payment Models and Technical Implementations}
+
+Educational platforms face unique challenges with payment systems. Many outsource payment processing due to regulatory complexity \cite{arasil2018}. Jayakumar \cite{jayakumar2020} describes "proof of payment" systems where transactions occur externally but are verified through receipt uploads—reducing regulatory burdens while maintaining system integrity.
+
+Technically, contemporary LMS platforms use diverse technology stacks. PHP dominates in systems like Moodle and Canvas, though Python and Node.js are gaining popularity \cite{papadakis2018}. Most platforms rely on relational databases, with growing adoption of microservices architectures \cite{severance2012} and responsive design frameworks like Bootstrap \cite{wong2016}.
+
+\subsection{Creator and Student Preferences}
+
+Research on monetization reveals important stakeholder preferences:
+
+\textbf{Educators:} Morris \cite{morris2021} found that 68\% of educators prefer fixed fees or subscription models over revenue sharing, valuing predictability and transparency. Li \cite{li2019a} discovered that tiered subscription models with capacity limitations yielded 40\% higher creator revenues compared to flat-fee approaches.
+
+\textbf{Students:} Means et al. \cite{means2015} report that 73\% of students prefer paying only for specific courses rather than platform-wide subscriptions. Additionally, Trust et al. \cite{trust2018} identified willingness among students to pay premium prices for courses with direct teacher interaction.
+
+\subsection{Research Gap}
+
+Despite extensive research, there remains a notable gap in exploring subscription models based specifically on student capacity for educators. Most existing research focuses either on institutional models or individual course monetization, not on subscription tiers that align platform costs with teacher reach.
+
+Additionally, few studies examine verification-based payment systems that maintain platform integrity while allowing external transactions. This project addresses these gaps by implementing and evaluating a capacity-based subscription model alongside a verification system for course payments.
