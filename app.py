@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, render_template
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from datetime import timedelta
@@ -74,7 +74,7 @@ app.register_blueprint(swagger_bp)
 
 @app.route('/')
 def index():
-    return redirect(url_for('auth.login'))
+    return render_template('landing.html')
 
 if __name__ == '__main__':
     with app.app_context():
