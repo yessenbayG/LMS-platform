@@ -25,8 +25,9 @@ A streamlined Learning Management System built with Python and Flask, focusing o
 
 - Python 3.8+
 - Pip package manager
+- Docker and Docker Compose (optional, for containerized deployment)
 
-### Installation
+### Standard Installation
 
 1. Clone the repository:
    ```
@@ -67,7 +68,42 @@ A streamlined Learning Management System built with Python and Flask, focusing o
    python app.py
    ```
 
-8. Access the application at http://127.0.0.1:5000
+8. Access the application at http://127.0.0.1:5002
+
+### Docker Installation
+
+1. Clone the repository:
+   ```
+   git clone <repository-url>
+   cd LMS-new-on-python
+   ```
+
+2. Copy the example environment file and customize as needed:
+   ```
+   cp .env.example .env
+   ```
+
+3. Build and start the Docker containers:
+   ```
+   docker-compose up -d
+   ```
+
+4. Access the application at http://localhost:5002
+
+5. To stop the containers:
+   ```
+   docker-compose down
+   ```
+
+6. To view logs:
+   ```
+   docker-compose logs -f
+   ```
+
+7. To rebuild after making changes:
+   ```
+   docker-compose up -d --build
+   ```
 
 ### Default Accounts
 
